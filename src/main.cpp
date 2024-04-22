@@ -7,6 +7,7 @@
 #include <string>
 #include <cstring>
 #include "koopa.h"
+#include "visit.h"
 #include "ast.h"
 
 using namespace std;
@@ -15,10 +16,6 @@ extern FILE* yyin;
 extern int yyparse(unique_ptr<BaseAst>& ast);
 
 void call_koopa(const char* res, ofstream& fout);
-void visit_koopa(const koopa_raw_program_t& raw, ofstream& fout);
-void visit_koopa(const koopa_raw_function_t& func, ofstream& fout);
-void visit_koopa(const koopa_raw_basic_block_t& bb, ofstream& fout);
-void visit_koopa(const koopa_raw_value_t& value, ofstream& fout);
 
 void call_koopa(const char* res, ofstream& fout) {
     koopa_program_t program;
@@ -31,40 +28,6 @@ void call_koopa(const char* res, ofstream& fout) {
     visit_koopa(raw, fout);
 
     koopa_delete_raw_program_builder(builder);
-}
-
-void visit_koopa(const koopa_raw_program_t& raw, ofstream& fout) {
-    fout << "  .text" << endl;
-    fout << "  .globl main" << endl;
-
-    for (size_t i = 0; i < raw.funcs.len; ++i) {
-        assert(raw.funcs.kind == KOOPA_RSIK_FUNCTION);
-        visit_koopa(reinterpret_cast<koopa_raw_function_t>(raw.funcs.buffer[i]), fout);
-    }
-}
-
-void visit_koopa(const koopa_raw_function_t& func, ofstream& fout) {
-    fout << "main:" << endl;
-
-    for (size_t i = 0; i < func->bbs.len; ++i) {
-        assert(func->bbs.kind == KOOPA_RSIK_BASIC_BLOCK);
-        visit_koopa(reinterpret_cast<koopa_raw_basic_block_t>(func->bbs.buffer[i]), fout);
-    }
-}
-
-void visit_koopa(const koopa_raw_basic_block_t& bb, ofstream& fout) {
-    for (size_t i = 0; i < bb->insts.len; ++i) {
-        visit_koopa(reinterpret_cast<koopa_raw_value_t>(bb->insts.buffer[i]), fout);
-    }
-}
-
-void visit_koopa(const koopa_raw_value_t& value, ofstream& fout) {
-    assert(value->kind.tag == KOOPA_RVT_RETURN);
-    koopa_raw_value_t ret_value = value->kind.data.ret.value;
-    assert(ret_value->kind.tag == KOOPA_RVT_INTEGER);
-    int32_t int_val = ret_value->kind.data.integer.value;
-    fout << "  li a0, " << int_val << endl;
-    fout << "  ret" << endl;
 }
 
 int main(int argc, char** argv) {
@@ -87,6 +50,7 @@ int main(int argc, char** argv) {
         ofstream fout(output);
         fout << tmp << endl;
     } else {
+        cout << tmp << endl;
         const char* res = tmp.c_str();
         ofstream fout(output);
         call_koopa(res, fout);
