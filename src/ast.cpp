@@ -11,6 +11,7 @@ int BaseAst::id = 0;
 
 Printer printer;
 SymbleTable table;
+bool end = false;
  
 void CompUnitAst::dump(std::stringstream& out) {
     func_def->dump(out);
@@ -35,7 +36,7 @@ void BlockAst::dump(std::stringstream& out) {
 
 void BlockItemListAst::dump(std::stringstream& out) {
     blockitem->dump(out);
-    if (blockitem_list != nullptr) {
+    if (blockitem_list != nullptr && !end) {
         blockitem_list->dump(out);
     }
 }
@@ -56,6 +57,7 @@ void StmtAst::dump(std::stringstream& out) {
         } else {
             out << "  ret %" << exp->idx << std::endl;
         }
+        end = true;
     } else {
         idx = BaseAst::id;
         out << "  %" << idx << " = load @" << lval->ident << std::endl;
