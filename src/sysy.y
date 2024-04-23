@@ -27,11 +27,12 @@ using namespace std;
     BaseAst* ast;
 }
 
-%token INT RETURN
+%token INT RETURN CONST
 %token <str_val> IDENT MUL_OP ADD_OP CMP_OP EQ_OP LAND_OP LOR_OP OTHER_OP
 %token <int_val> INT_CONST
 
-%type <ast> FuncDef FuncType Block Stmt Exp PrimaryExp UnaryExp AddExp MulExp RelExp EqExp LAndExp LOrExp
+%type <ast> FuncDef FuncType Block Stmt Exp PrimaryExp UnaryExp AddExp MulExp RelExp EqExp LAndExp LOrExp 
+Decl ConstDecl VarDecl VarDefList VarDef InitVal Btype ConstDefList ConstDef ConstInitVal BlockItem LVal ConstExp BlockItemList
 %type <int_val> Number
 
 %%
@@ -55,15 +56,41 @@ FuncType: INT {
     $$ = ast;
 };
 
-Block: '{' Stmt '}' {
+Block: '{' BlockItemList '}' {
     auto ast = new BlockAst();
-    ast->stmt = unique_ptr<BaseAst>($2);
+    ast->blockitem_list = unique_ptr<BaseAst>($2);
+    $$ = ast;
+};
+
+BlockItemList: BlockItem {
+    auto ast = new BlockItemListAst();
+    ast->blockitem = unique_ptr<BaseAst>($1);
+    $$ = ast;
+} | BlockItem BlockItemList {
+    auto ast = new BlockItemListAst();
+    ast->blockitem = unique_ptr<BaseAst>($1);
+    ast->blockitem_list = unique_ptr<BaseAst>($2);
+    $$ = ast;
+};
+
+BlockItem: Stmt {
+    auto ast = new BlockItemAst();
+    ast->stmt = unique_ptr<BaseAst>($1);
+    $$ = ast;
+} | Decl {
+    auto ast = new BlockItemAst();
+    ast->decl = unique_ptr<BaseAst>($1);
     $$ = ast;
 };
 
 Stmt: RETURN Exp ';' {
     auto ast = new StmtAst();
     ast->exp = unique_ptr<BaseAst>($2);
+    $$ = ast;
+} | LVal '=' Exp ';' {
+    auto ast = new StmtAst();
+    ast->lval = unique_ptr<BaseAst>($1);
+    ast->exp = unique_ptr<BaseAst>($3);
     $$ = ast;
 };
 
@@ -82,6 +109,11 @@ PrimaryExp: '(' Exp ')' {
     auto ast = new PrimaryExpAst();
     ast->number = $1;
     ast->type = 1;
+    $$ = ast;
+} | LVal {
+    auto ast = new PrimaryExpAst();
+    ast->lval = unique_ptr<BaseAst>($1);
+    ast->type = 2;
     $$ = ast;
 };
 
@@ -103,7 +135,6 @@ UnaryExp: PrimaryExp {
     ast->type = 1;
     $$ = ast;
 };
-
 AddExp: MulExp {
     auto ast = new AddExpAst();
     ast->mul_exp = unique_ptr<BaseAst>($1);
@@ -188,6 +219,99 @@ LOrExp: LAndExp {
 
 Number: INT_CONST {
     $$ = $1;
+};
+
+Decl: ConstDecl {
+    auto ast = new DeclAst();
+    ast->const_decl = unique_ptr<BaseAst>($1);
+    $$ = ast;
+} | VarDecl {
+    auto ast = new DeclAst();
+    ast->var_decl = unique_ptr<BaseAst>($1);
+    $$ = ast;
+};
+
+ConstDecl: CONST Btype ConstDefList ';' {
+    auto ast = new ConstDeclAst();
+    ast->btype = unique_ptr<BaseAst>($2);
+    ast->const_def_list = unique_ptr<BaseAst>($3);
+    $$ = ast;
+};
+
+VarDecl: Btype VarDefList ';' {
+    auto ast = new VarDeclAst();
+    ast->btype = unique_ptr<BaseAst>($1);
+    ast->var_def_list = unique_ptr<BaseAst>($2);
+    $$ = ast;
+};
+
+VarDefList: VarDef {
+    auto ast = new VarDefListAst();
+    ast->var_def = unique_ptr<BaseAst>($1);
+    $$ = ast;
+} | VarDef ',' VarDefList {
+    auto ast = new VarDefListAst();
+    ast->var_def = unique_ptr<BaseAst>($1);
+    ast->var_def_list = unique_ptr<BaseAst>($3);
+    $$ = ast;
+};
+
+VarDef: IDENT {
+    auto ast = new VarDefAst();
+    ast->ident = *unique_ptr<string>($1);
+    $$ = ast;
+} | IDENT '=' InitVal {
+    auto ast = new VarDefAst();
+    ast->ident = *unique_ptr<string>($1);
+    ast->initval = unique_ptr<BaseAst>($3);
+    $$ = ast;
+};
+
+Btype: INT {
+    auto ast = new BtypeAst();
+    $$ = ast;
+};
+
+ConstDefList: ConstDef {
+    auto ast = new ConstDefListAst();
+    ast->const_def = unique_ptr<BaseAst>($1);
+    $$ = ast;
+} | ConstDef ',' ConstDefList {
+    auto ast = new ConstDefListAst();
+    ast->const_def = unique_ptr<BaseAst>($1);
+    ast->const_def_list = unique_ptr<BaseAst>($3);
+    $$ = ast;
+};
+
+ConstDef: IDENT '=' ConstInitVal {
+    auto ast = new ConstDefAst();
+    ast->ident = *unique_ptr<string>($1);
+    ast->const_init_val = unique_ptr<BaseAst>($3);
+    $$ = ast;
+};
+
+ConstInitVal: ConstExp {
+    auto ast = new ConstInitValAst();
+    ast->const_exp = unique_ptr<BaseAst>($1);
+    $$ = ast;
+};
+
+InitVal: Exp {
+    auto ast = new InitValAst();
+    ast->exp = unique_ptr<BaseAst>($1);
+    $$ = ast;
+};
+
+ConstExp: Exp {
+    auto ast = new ConstExpAst();
+    ast->exp = unique_ptr<BaseAst>($1);
+    $$ = ast;
+};
+
+LVal: IDENT {
+    auto ast = new LValAst();
+    ast->ident = *unique_ptr<string>($1);
+    $$ = ast;
 };
 
 %%

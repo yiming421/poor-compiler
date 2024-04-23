@@ -42,7 +42,7 @@ int main(int argc, char** argv) {
     unique_ptr<BaseAst> ast;
     int ret = yyparse(ast);
     assert(!ret);
-    
+
     stringstream out;
     ast->dump(out);
     string tmp = out.str();
@@ -50,7 +50,6 @@ int main(int argc, char** argv) {
         ofstream fout(output);
         fout << tmp << endl;
     } else {
-        cout << tmp << endl;
         const char* res = tmp.c_str();
         ofstream fout(output);
         call_koopa(res, fout);
