@@ -3,6 +3,7 @@
 #include <cassert>
 #include <vector>
 #include <unordered_map>
+#include <cmath>
 #include "koopa.h"
 #include "visit.h"
 
@@ -21,9 +22,19 @@ public:
                 if (value->kind.tag == KOOPA_RVT_BINARY) {
                     var2bias[value] = bias;
                     bias += 4;
+                } else if (value->kind.tag == KOOPA_RVT_ALLOC) {
+                    var2bias[value] = bias;
+                    bias += 4;
+                } else if (value->kind.tag == KOOPA_RVT_LOAD) {
+                    var2bias[value] = bias;
+                    bias += 4;
+                } else if (value->kind.tag == KOOPA_RVT_STORE && value->kind.data.store.value->kind.tag != KOOPA_RVT_INTEGER) {
+                    var2bias[value] = bias;
+                    bias += 4;
                 }
             }
         }
+        bias = ceil(static_cast<double>(bias) / 16) * 16;
         return bias;
     }
 
@@ -34,6 +45,7 @@ public:
     int clear() {
         int tmp = bias;
         bias = 0;
+        var2bias.clear();
         return tmp;
     }
 
@@ -88,9 +100,31 @@ void visit_koopa(const koopa_raw_value_t& value, ofstream& fout) {
             visit_koopa(value->kind.data.binary, fout);
             fout << "  sw t0, " << st.getbias(value) << "(sp)" << endl;
             break;
+        case KOOPA_RVT_ALLOC:
+            break;
+        case KOOPA_RVT_LOAD:
+            visit_koopa(value->kind.data.load, fout);
+            fout << "  sw t0, " << st.getbias(value) << "(sp)" << endl;
+            break;
+        case KOOPA_RVT_STORE:
+            visit_koopa(value->kind.data.store, fout);
+            break;
         default:
             assert(false);
     }
+}
+
+void visit_koopa(const koopa_raw_load_t& load, ofstream& fout) {
+    fout << "  lw t0, " << st.getbias(load.src) << "(sp)" << endl;
+}
+
+void visit_koopa(const koopa_raw_store_t& store, ofstream& fout) {
+    if (store.value->kind.tag == KOOPA_RVT_INTEGER) {
+        fout << "  li t0, " << store.value->kind.data.integer.value << endl;
+    } else {
+        fout << "  lw t0, " << st.getbias(store.value) << "(sp)" << endl;
+    }
+    fout << "  sw t0, " << st.getbias(store.dest) << "(sp)" << endl;
 }
 
 void visit_koopa(const koopa_raw_return_t& ret, ofstream& fout) {

@@ -12,3 +12,5 @@ void visit_koopa(const koopa_raw_value_t& value, ofstream& fout);
 void visit_koopa(const koopa_raw_return_t& ret, ofstream& fout);
 int visit_koopa(const koopa_raw_integer_t& integer, ofstream& fout);
 void visit_koopa(const koopa_raw_binary_t& binary, ofstream& fout);
+void visit_koopa(const koopa_raw_load_t& load, ofstream& fout);
+void visit_koopa(const koopa_raw_store_t& store, ofstream& fout);
