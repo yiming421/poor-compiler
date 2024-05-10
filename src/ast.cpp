@@ -65,6 +65,7 @@ void StmtAst::dump(std::stringstream& out) {
             } else {
                 out << "  ret %" << exp->idx << std::endl;
             }
+            end = true;
             break;
         case 1:
             idx = BaseAst::id;
