@@ -10,7 +10,7 @@
 int BaseAst::id = 0;
 
 Printer printer;
-SymbleTable table;
+SymbolTable table;
 bool end = false;
  
 void CompUnitAst::dump(std::stringstream& out) {
@@ -28,10 +28,17 @@ void FuncTypeAst::dump(std::stringstream& out) {
 }
 
 void BlockAst::dump(std::stringstream& out) {
-    out << "{" << std::endl;
-    out << "@entry:" << std::endl;
-    blockitem_list->dump(out);
-    out << "}" << std::endl;
+    if (blockitem_list == nullptr) {
+        return;
+    }
+    if (flag) {
+        out << "{" << std::endl;
+        out << "@entry:" << std::endl;
+        blockitem_list->dump(out);
+        out << "}" << std::endl;
+    } else {
+        blockitem_list->dump(out);
+    }
 }
 
 void BlockItemListAst::dump(std::stringstream& out) {
@@ -50,24 +57,36 @@ void BlockItemAst::dump(std::stringstream& out) {
 }
 
 void StmtAst::dump(std::stringstream& out) {
-    if (lval == nullptr) {
-        exp->dump(out);
-        if (exp->idx == -1) {
-            out << "  ret " << exp->num << std::endl;
-        } else {
-            out << "  ret %" << exp->idx << std::endl;
-        }
-        end = true;
-    } else {
-        idx = BaseAst::id;
-        out << "  %" << idx << " = load @" << lval->ident << std::endl;
-        BaseAst::id++;
-        exp->dump(out);
-        if (exp->idx == -1) {
-            out << "  store " << exp->num << ", @" << lval->ident << std::endl;
-        } else {
-            out << "  store %" << exp->idx << ", @" << lval->ident << std::endl;
-        }
+    switch (type) {
+        case 0:
+            exp->dump(out);
+            if (exp->idx == -1) {
+                out << "  ret " << exp->num << std::endl;
+            } else {
+                out << "  ret %" << exp->idx << std::endl;
+            }
+            break;
+        case 1:
+            idx = BaseAst::id;
+            printer.print_load(idx, lval->ident, out, table);
+            BaseAst::id++;
+            exp->dump(out);
+            if (exp->idx == -1) {
+                printer.print_store(false, exp->num, lval->ident, out, table);
+            } else {
+                printer.print_store(true, exp->idx, lval->ident, out, table);
+            }
+            break;
+        case 2:
+            table.push();
+            block->dump(out);
+            table.pop();
+            break;
+        case 3:
+            exp->dump(out);
+            break;
+        default:
+            break;
     }
 }
 
@@ -97,7 +116,7 @@ void PrimaryExpAst::dump(std::stringstream& out) {
             num = lval->cal();
         } else {
             idx = BaseAst::id;
-            out << "  %" << idx << " = load @" << lval->ident << std::endl;
+            printer.print_load(idx, lval->ident, out, table);
             BaseAst::id++;
         }
     }
@@ -362,13 +381,13 @@ int ConstDefAst::cal() {
 
 void VarDefAst::dump(std::stringstream& out) {
     table.insert(ident);
-    out << "  @" << ident << " = " << "alloc i32" << std::endl;
+    printer.print_alloc(ident, out, table);
     if (initval != nullptr) {
         initval->dump(out);
         if (initval->idx == -1) {
-            out << "  store " << initval->num << ", @" << ident << std::endl;
+            printer.print_store(false, initval->num, ident, out, table);
         } else {
-            out << "  store %" << initval->idx << ", @" << ident << std::endl;
+            printer.print_store(true, initval->idx, ident, out, table);
         }
     }
 }

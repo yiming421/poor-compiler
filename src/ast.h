@@ -44,6 +44,7 @@ class BlockAst : public BaseAst {
 public:
     std::unique_ptr<BaseAst> blockitem_list;
     void dump(std::stringstream& out);
+    bool flag = false;
 };
 
 class BlockItemListAst : public BaseAst {
@@ -64,6 +65,8 @@ class StmtAst : public BaseAst {
 public:
     std::unique_ptr<BaseAst> exp;
     std::unique_ptr<BaseAst> lval;
+    std::unique_ptr<BaseAst> block;
+    int type = 0;
     void dump(std::stringstream& out);
 };
 

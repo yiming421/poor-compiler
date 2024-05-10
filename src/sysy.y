@@ -48,6 +48,7 @@ FuncDef: FuncType IDENT '(' ')' Block {
     ast->func_type = unique_ptr<BaseAst>($1);
     ast->ident = *unique_ptr<string>($2);
     ast->block = unique_ptr<BaseAst>($5);
+    dynamic_cast<BlockAst&>(*ast->block).flag = true;
     $$ = ast;
 };
 
@@ -59,6 +60,9 @@ FuncType: INT {
 Block: '{' BlockItemList '}' {
     auto ast = new BlockAst();
     ast->blockitem_list = unique_ptr<BaseAst>($2);
+    $$ = ast;
+} | '{' '}' {
+    auto ast = new BlockAst();
     $$ = ast;
 };
 
@@ -86,11 +90,27 @@ BlockItem: Stmt {
 Stmt: RETURN Exp ';' {
     auto ast = new StmtAst();
     ast->exp = unique_ptr<BaseAst>($2);
+    ast->type = 0;
     $$ = ast;
 } | LVal '=' Exp ';' {
     auto ast = new StmtAst();
     ast->lval = unique_ptr<BaseAst>($1);
     ast->exp = unique_ptr<BaseAst>($3);
+    ast->type = 1;
+    $$ = ast;
+} | Block {
+    auto ast = new StmtAst();
+    ast->block = unique_ptr<BaseAst>($1);
+    ast->type = 2;
+    $$ = ast;
+} | Exp ';' {
+    auto ast = new StmtAst();
+    ast->exp = unique_ptr<BaseAst>($1);
+    ast->type = 3;
+    $$ = ast;
+} | ';' {
+    auto ast = new StmtAst();
+    ast->type = 4;
     $$ = ast;
 };
 

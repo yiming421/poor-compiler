@@ -4,6 +4,7 @@
 #include <unordered_map>
 #include "ast.h"
 #include "printer.h"
+#include "symbol.h"
 
 std::unordered_map<std::string, std::string> op2str = {
     {"+", "add"},
@@ -68,4 +69,23 @@ void Printer::print_unary(int idx, std::string op, std::unique_ptr<BaseAst>& rhs
         out << "  %" << idx << " = eq 0, ";
     }
     print_rhs(rhs, out);
+}
+
+void Printer::print_load(int idx, std::string ident, std::stringstream& out, SymbolTable& table) {
+    int id = table.getID(ident);
+    out << "  %" << idx << " = load @" << (ident + std::to_string(id)) << std::endl;
+}
+
+void Printer::print_store(bool flag, int idx, std::string ident, std::stringstream& out, SymbolTable& table) {
+    int id = table.getID(ident);
+    if (flag) {
+        out << "  store %" << idx << ", @" << (ident + std::to_string(id)) << std::endl;
+    } else {
+        out << "  store " << idx << ", @" << ident + std::to_string(id) << std::endl;
+    }
+}
+
+void Printer::print_alloc(std::string ident, std::stringstream& out, SymbolTable& table) {
+    int id = table.getID(ident);
+    out << "  @" << (ident + std::to_string(id)) << " = alloc i32" << std::endl;
 }
