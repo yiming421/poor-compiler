@@ -391,11 +391,29 @@ int EqExpAst::cal() {
 void LAndExpAst::dump(std::stringstream& out) {
     if (type != 0){
         land_exp->dump(out);
+        count.cnt++;
+        string then_label = count.getlabel("then");
+        string end_label = count.getlabel("end");
+        idx = BaseAst::id;
+        string ident = "tmp_" + std::to_string(count.cnt);
+        table.insert(ident, idx);
+        printer.print_alloc(ident, out, table);
+        printer.print_store(false, 0, ident, out, table);
+        if (land_exp->idx == -1) {
+            printer.print_br(false, land_exp->num, then_label, end_label, out);
+        } else {
+            printer.print_br(true, land_exp->idx, then_label, end_label, out);
+        }
+        printer.print_label(then_label, out);
         eq_exp->dump(out);
         idx = BaseAst::id;
-        printer.print_land(idx, land_exp, eq_exp, out);
-        BaseAst::id += 3;
-        idx += 2;
+        printer.print_eq(false, idx, eq_exp, out);
+        printer.print_store(true, idx, ident, out, table);
+        printer.print_jump(end_label, out);
+        printer.print_label(end_label, out);
+        printer.print_load(idx + 1, ident, out, table);
+        BaseAst::id += 2;
+        idx += 1;
     } else {
         eq_exp->dump(out);
         idx = eq_exp->idx;
@@ -417,9 +435,27 @@ int LAndExpAst::cal() {
 void LOrExpAst::dump(std::stringstream& out) {
     if (type != 0){
         lor_exp->dump(out);
+        count.cnt++;
+        string then_label = count.getlabel("then");
+        string end_label = count.getlabel("end");
+        idx = BaseAst::id;
+        string ident = "tmp_" + std::to_string(count.cnt);
+        table.insert(ident, idx);
+        printer.print_alloc(ident, out, table);
+        printer.print_store(false, 1, ident, out, table);
+        if (lor_exp->idx == -1) {
+            printer.print_br(false, lor_exp->num, end_label, then_label, out);
+        } else {
+            printer.print_br(true, lor_exp->idx, end_label, then_label, out);
+        }
+        printer.print_label(then_label, out);
         land_exp->dump(out);
         idx = BaseAst::id;
-        printer.print_lor(idx, lor_exp, land_exp, out);
+        printer.print_eq(false, idx, land_exp, out);
+        printer.print_store(true, idx, ident, out, table);
+        printer.print_jump(end_label, out);
+        printer.print_label(end_label, out);
+        printer.print_load(idx + 1, ident, out, table);
         BaseAst::id += 2;
         idx += 1;
     } else {

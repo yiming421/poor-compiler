@@ -60,21 +60,6 @@ void Printer::print_binary(int idx, std::string& op, std::unique_ptr<BaseAst>& l
     print_rhs(rhs, out);
 }
 
-void Printer::print_lor(int idx, std::unique_ptr<BaseAst>& lhs, std::unique_ptr<BaseAst>& rhs, std::stringstream& out) {
-    out << "  %" << idx << " = or ";
-    print_lhs(lhs, out);
-    print_rhs(rhs, out);
-    out << "  %" << idx + 1 << " = ne 0, %" << idx << std::endl;
-}
-
-void Printer::print_land(int idx, std::unique_ptr<BaseAst>& lhs, std::unique_ptr<BaseAst>& rhs, std::stringstream& out) {
-    out << "  %" << idx << " = ne 0, ";
-    print_rhs(lhs, out);
-    out << "  %" << idx + 1 << " = ne 0, ";
-    print_rhs(lhs, out);
-    out << "  %" << idx + 2 << " = and %" << idx << ", %" << idx + 1 << std::endl;
-}
-
 void Printer::print_unary(int idx, std::string& op, std::unique_ptr<BaseAst>& rhs, std::stringstream& out) {
     if (op == "-") {
         out << "  %" << idx << " = sub 0, ";
@@ -117,4 +102,13 @@ void Printer::print_jump(std::string& label, std::stringstream& out) {
 
 void Printer::print_label(std::string& label, std::stringstream& out) {
     out << "%" << label << ":" << std::endl;
+}
+
+void Printer::print_eq(bool flag, int idx, std::unique_ptr<BaseAst>& ptr, std::stringstream& out) {
+    if (flag) {
+        out << "  %" << idx << " = eq 0, ";
+    } else {
+        out << "  %" << idx << " = ne 0, ";
+    }
+    print_rhs(ptr, out);
 }
