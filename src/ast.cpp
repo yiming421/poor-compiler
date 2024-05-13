@@ -1,5 +1,5 @@
 #include "ast.h"
-#include "printer.h"
+#include "util.h"
 #include "symbol.h"
 #include <iostream>
 #include <sstream>
@@ -12,6 +12,7 @@ int BaseAst::id = 0;
 Printer printer;
 SymbolTable table;
 bool end = false;
+bs_cnt count;
  
 void CompUnitAst::dump(std::stringstream& out) {
     func_def->dump(out);
@@ -33,7 +34,7 @@ void BlockAst::dump(std::stringstream& out) {
     }
     if (flag) {
         out << "{" << std::endl;
-        out << "@entry:" << std::endl;
+        out << "%entry:" << std::endl;
         blockitem_list->dump(out);
         out << "}" << std::endl;
     } else {
@@ -57,6 +58,106 @@ void BlockItemAst::dump(std::stringstream& out) {
 }
 
 void StmtAst::dump(std::stringstream& out) {
+    switch (type) {
+        case 0: {
+            exp->dump(out);
+            count.cnt++;
+            string then_label = count.getlabel("then");
+            string end_label = count.getlabel("end");
+            if (exp->idx == -1) {
+                printer.print_br(false, exp->num, then_label, end_label, out);
+            } else {
+                printer.print_br(true, exp->idx, then_label, end_label, out);
+            }
+            printer.print_label(then_label, out);
+            stmt->dump(out);
+            if (!end) {
+                printer.print_jump(end_label, out);
+            } else {
+                end = false;
+            }
+            printer.print_label(end_label, out);
+            break;
+        }
+        case 1: {
+            exp->dump(out);
+            count.cnt++;
+            string then_label = count.getlabel("then");
+            string else_label = count.getlabel("else");
+            string end_label = count.getlabel("end");
+            if (exp->idx == -1) {
+                printer.print_br(false, exp->num, then_label, else_label, out);
+            } else {
+                printer.print_br(true, exp->idx, then_label, else_label, out);
+            }
+            printer.print_label(then_label, out);
+            with_else->dump(out);
+            bool flag1 = end;
+            if (!end) {
+                printer.print_jump(end_label, out);
+            } else {
+                end = false;
+            }
+            printer.print_label(else_label, out);
+            stmt->dump(out);
+            bool flag2 = end;
+            if (!end) {
+                printer.print_jump(end_label, out);
+            } else {
+                end = false;
+            }
+            if (flag1 && flag2) {
+                end = true;
+            } else {
+                printer.print_label(end_label, out);
+            }
+            break;
+        }
+        default:
+            other_stmt->dump(out);
+            break;
+    }
+}
+
+void WithElseAst::dump(std::stringstream& out) {
+    if (other_stmt != nullptr) {
+        other_stmt->dump(out);
+    } else {
+        exp->dump(out);
+        count.cnt++;
+        string then_label = count.getlabel("then");
+        string else_label = count.getlabel("else");
+        string end_label = count.getlabel("end");
+        if (exp->idx == -1) {
+            printer.print_br(false, exp->num, then_label, else_label, out);
+        } else {
+            printer.print_br(true, exp->idx, then_label, else_label, out);
+        }
+        printer.print_label(then_label, out);
+        if_withelse->dump(out);
+        bool flag1 = end;
+        if (!end) {
+            printer.print_jump(end_label, out);
+        } else {
+            end = false;
+        }
+        printer.print_label(else_label, out);
+        else_withelse->dump(out);
+        bool flag2 = end;
+        if (!end) {
+            printer.print_jump(end_label, out);
+        } else {
+            end = false;
+        }
+        if (flag1 && flag2) {
+            end = true;
+        } else {
+            printer.print_label(end_label, out);
+        }
+    }
+}
+
+void OtherStmtAst::dump(std::stringstream& out) {
     switch (type) {
         case 0:
             exp->dump(out);

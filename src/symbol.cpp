@@ -3,7 +3,7 @@
 #include <cassert>
 #include "symbol.h"
 
-bool SymbolTable::insert(std::string name, int num) {
+bool SymbolTable::insert(std::string& name, int num) {
     auto& tab = table.first;
     if (tab.find(name) == tab.end()) {
         tab[name] = std::make_pair(num, true);
@@ -12,7 +12,7 @@ bool SymbolTable::insert(std::string name, int num) {
     return false;
 }
 
-bool SymbolTable::insert(std::string name) {
+bool SymbolTable::insert(std::string& name) {
     auto& tab = table.first;
     if (tab.find(name) == tab.end()) {
         tab[name] = std::make_pair(0, false);
@@ -21,7 +21,7 @@ bool SymbolTable::insert(std::string name) {
     return false;
 }
 
-bool SymbolTable::isExist(std::string name) const {
+bool SymbolTable::isExist(std::string& name) const {
     auto& tab = table.first;
     if (tab.find(name) != tab.end()) {
         return true;
@@ -35,7 +35,7 @@ bool SymbolTable::isExist(std::string name) const {
     return false;
 }
 
-int SymbolTable::get(std::string name) {
+int SymbolTable::get(std::string& name) {
     auto &tab = table.first;
     if (tab.find(name) != tab.end()) {
         return tab[name].first;
@@ -50,7 +50,7 @@ int SymbolTable::get(std::string name) {
     return -1;
 }
 
-bool SymbolTable::isConst(std::string name) {
+bool SymbolTable::isConst(std::string& name) {
     auto& tab = table.first;
     if (tab.find(name) != tab.end()) {
         return tab[name].second;
@@ -65,7 +65,7 @@ bool SymbolTable::isConst(std::string name) {
     return false;
 }
 
-int SymbolTable::getID(std::string name) const {
+int SymbolTable::getID(std::string& name) const {
     auto& tab = table.first;
     if (tab.find(name) != tab.end()) {
         return table.second;

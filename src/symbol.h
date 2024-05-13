@@ -5,14 +5,14 @@
 
 class SymbolTable {
 public:
-    bool insert(std::string name, int num);
-    bool insert(std::string name);
-    bool isExist(std::string name) const;
-    int get(std::string name);
-    bool isConst(std::string name);
+    bool insert(std::string& name, int num);
+    bool insert(std::string& name);
+    bool isExist(std::string& name) const;
+    int get(std::string& name);
+    bool isConst(std::string& name);
     void push();
     void pop();
-    int getID(std::string name) const;
+    int getID(std::string& name) const;
 
 private:
     std::pair<std::unordered_map<std::string, std::pair<int, bool>>, int> table;

@@ -27,12 +27,13 @@ using namespace std;
     BaseAst* ast;
 }
 
-%token INT RETURN CONST
+%token INT RETURN CONST IF ELSE
 %token <str_val> IDENT MUL_OP ADD_OP CMP_OP EQ_OP LAND_OP LOR_OP OTHER_OP
 %token <int_val> INT_CONST
 
 %type <ast> FuncDef FuncType Block Stmt Exp PrimaryExp UnaryExp AddExp MulExp RelExp EqExp LAndExp LOrExp 
-Decl ConstDecl VarDecl VarDefList VarDef InitVal Btype ConstDefList ConstDef ConstInitVal BlockItem LVal ConstExp BlockItemList
+Decl ConstDecl VarDecl VarDefList VarDef InitVal Btype ConstDefList ConstDef ConstInitVal BlockItem LVal 
+ConstExp BlockItemList WithElse OtherStmt
 %type <int_val> Number
 
 %%
@@ -87,30 +88,62 @@ BlockItem: Stmt {
     $$ = ast;
 };
 
-Stmt: RETURN Exp ';' {
-    auto ast = new StmtAst();
+OtherStmt: RETURN Exp ';' {
+    auto ast = new OtherStmtAst();
     ast->exp = unique_ptr<BaseAst>($2);
     ast->type = 0;
     $$ = ast;
 } | LVal '=' Exp ';' {
-    auto ast = new StmtAst();
+    auto ast = new OtherStmtAst();
     ast->lval = unique_ptr<BaseAst>($1);
     ast->exp = unique_ptr<BaseAst>($3);
     ast->type = 1;
     $$ = ast;
 } | Block {
-    auto ast = new StmtAst();
+    auto ast = new OtherStmtAst();
     ast->block = unique_ptr<BaseAst>($1);
     ast->type = 2;
     $$ = ast;
 } | Exp ';' {
-    auto ast = new StmtAst();
+    auto ast = new OtherStmtAst();
     ast->exp = unique_ptr<BaseAst>($1);
     ast->type = 3;
     $$ = ast;
 } | ';' {
-    auto ast = new StmtAst();
+    auto ast = new OtherStmtAst();
     ast->type = 4;
+    $$ = ast;
+};
+
+Stmt: IF '(' Exp ')' Stmt {
+    auto ast = new StmtAst();
+    ast->exp = unique_ptr<BaseAst>($3);
+    ast->stmt = unique_ptr<BaseAst>($5);
+    ast->type = 0;
+    $$ = ast;
+} | IF '(' Exp ')' WithElse ELSE Stmt {
+    auto ast = new StmtAst();
+    ast->exp = unique_ptr<BaseAst>($3);
+    ast->with_else = unique_ptr<BaseAst>($5);
+    ast->stmt = unique_ptr<BaseAst>($7);
+    ast->type = 1;
+    $$ = ast;
+} | OtherStmt {
+    auto ast = new StmtAst();
+    ast->other_stmt = unique_ptr<BaseAst>($1);
+    ast->type = 2;
+    $$ = ast;
+}
+
+WithElse: IF '(' Exp ')' WithElse ELSE WithElse{
+    auto ast = new WithElseAst();
+    ast->exp = unique_ptr<BaseAst>($3);
+    ast->if_withelse = unique_ptr<BaseAst>($5);
+    ast->else_withelse = unique_ptr<BaseAst>($7);
+    $$ = ast;
+} | OtherStmt {
+    auto ast = new WithElseAst();
+    ast->other_stmt = unique_ptr<BaseAst>($1);
     $$ = ast;
 };
 
