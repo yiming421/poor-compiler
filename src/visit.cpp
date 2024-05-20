@@ -4,10 +4,12 @@
 #include <vector>
 #include <unordered_map>
 #include <cmath>
+#include <cstring>
 #include "koopa.h"
 #include "visit.h"
 
 using namespace std;
+int tracktmp = 0;
 
 class stack {
 public:
@@ -48,6 +50,9 @@ public:
         var2bias.clear();
         return tmp;
     }
+    int getnum() {
+        return bias;
+    }
 
 private:
     int bias = 0;
@@ -79,10 +84,13 @@ void visit_koopa(const koopa_raw_function_t& func, ofstream& fout) {
         assert(func->bbs.kind == KOOPA_RSIK_BASIC_BLOCK);
         visit_koopa(reinterpret_cast<koopa_raw_basic_block_t>(func->bbs.buffer[i]), fout);
     }
-
+    st.clear();
 }
 
 void visit_koopa(const koopa_raw_basic_block_t& bb, ofstream& fout) {
+    if (strcmp(bb->name, "%entry")) {
+        fout << string(bb->name + 1) << ":" << endl;
+    }
     for (size_t i = 0; i < bb->insts.len; ++i) {
         visit_koopa(reinterpret_cast<koopa_raw_value_t>(bb->insts.buffer[i]), fout);
     }
@@ -109,9 +117,33 @@ void visit_koopa(const koopa_raw_value_t& value, ofstream& fout) {
         case KOOPA_RVT_STORE:
             visit_koopa(value->kind.data.store, fout);
             break;
+        case KOOPA_RVT_JUMP:
+            visit_koopa(value->kind.data.jump, fout);
+            break;
+        case KOOPA_RVT_BRANCH:
+            visit_koopa(value->kind.data.branch, fout);
+            break;
         default:
             assert(false);
     }
+}
+
+void visit_koopa(const koopa_raw_jump_t& jump, ofstream& fout) {
+    fout << "  j " << string(jump.target->name + 1) << endl;
+}
+
+void visit_koopa(const koopa_raw_branch_t& branch, ofstream& fout) {
+    if (branch.cond->kind.tag == KOOPA_RVT_INTEGER) {
+        fout << "  li t0, " << branch.cond->kind.data.integer.value << endl;
+    } else {
+        fout << "  lw t0, " << st.getbias(branch.cond) << "(sp)" << endl;
+    }
+    string tmplabel = "tmp_";
+    tmplabel += to_string(tracktmp++);
+    fout << "  bnez t0, " << tmplabel << endl;
+    fout << "  j " << string(branch.false_bb->name + 1) << endl;
+    fout << tmplabel << ":" << endl;
+    fout << "  j " << string(branch.true_bb->name + 1) << endl; 
 }
 
 void visit_koopa(const koopa_raw_load_t& load, ofstream& fout) {
@@ -133,7 +165,7 @@ void visit_koopa(const koopa_raw_return_t& ret, ofstream& fout) {
     } else {
         fout << "  lw a0, " << st.getbias(ret.value) << "(sp)" << endl;
     }
-    fout << "  addi sp, sp, " << st.clear() << endl;
+    fout << "  addi sp, sp, " << st.getnum() << endl;
     fout << "  ret" << endl;
 }
 
