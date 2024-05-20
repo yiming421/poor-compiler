@@ -78,7 +78,8 @@ void visit_koopa(const koopa_raw_program_t& raw, ofstream& fout) {
 
 void visit_koopa(const koopa_raw_function_t& func, ofstream& fout) {
     fout << "main:" << endl;
-    fout << "  addi sp, sp, -" << st.precompute(func) << endl;
+    fout << "  li t0, -" << st.precompute(func) << endl;
+    fout << "  addi sp, sp, t0" << endl;
 
     for (size_t i = 0; i < func->bbs.len; ++i) {
         assert(func->bbs.kind == KOOPA_RSIK_BASIC_BLOCK);
@@ -138,7 +139,7 @@ void visit_koopa(const koopa_raw_branch_t& branch, ofstream& fout) {
     } else {
         fout << "  lw t0, " << st.getbias(branch.cond) << "(sp)" << endl;
     }
-    string tmplabel = "tmp_";
+    string tmplabel = "L_";
     tmplabel += to_string(tracktmp++);
     fout << "  bnez t0, " << tmplabel << endl;
     fout << "  j " << string(branch.false_bb->name + 1) << endl;
@@ -165,7 +166,8 @@ void visit_koopa(const koopa_raw_return_t& ret, ofstream& fout) {
     } else {
         fout << "  lw a0, " << st.getbias(ret.value) << "(sp)" << endl;
     }
-    fout << "  addi sp, sp, " << st.getnum() << endl;
+    fout << "  li t0, " << st.getnum() << endl;
+    fout << "  addi sp, sp, t0" << endl;
     fout << "  ret" << endl;
 }
 
