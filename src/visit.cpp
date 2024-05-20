@@ -78,8 +78,8 @@ void visit_koopa(const koopa_raw_program_t& raw, ofstream& fout) {
 
 void visit_koopa(const koopa_raw_function_t& func, ofstream& fout) {
     fout << "main:" << endl;
-    fout << "  li t0, -" << st.precompute(func) << endl;
-    fout << "  addi sp, sp, t0" << endl;
+    fout << "  li t2, -" << st.precompute(func) << endl;
+    fout << "  add sp, sp, t2" << endl;
 
     for (size_t i = 0; i < func->bbs.len; ++i) {
         assert(func->bbs.kind == KOOPA_RSIK_BASIC_BLOCK);
@@ -107,13 +107,17 @@ void visit_koopa(const koopa_raw_value_t& value, ofstream& fout) {
             break;
         case KOOPA_RVT_BINARY:
             visit_koopa(value->kind.data.binary, fout);
-            fout << "  sw t0, " << st.getbias(value) << "(sp)" << endl;
+            fout << "  li t2, " << st.getbias(value) << endl;
+            fout << "  add t2, sp, t2" << endl;
+            fout << "  sw t0, 0(t2)" << endl;
             break;
         case KOOPA_RVT_ALLOC:
             break;
         case KOOPA_RVT_LOAD:
             visit_koopa(value->kind.data.load, fout);
-            fout << "  sw t0, " << st.getbias(value) << "(sp)" << endl;
+            fout << "  li t2, " << st.getbias(value) << endl;
+            fout << "  add t2, sp, t2" << endl;
+            fout << "  sw t0, 0(t2)" << endl;
             break;
         case KOOPA_RVT_STORE:
             visit_koopa(value->kind.data.store, fout);
@@ -137,7 +141,9 @@ void visit_koopa(const koopa_raw_branch_t& branch, ofstream& fout) {
     if (branch.cond->kind.tag == KOOPA_RVT_INTEGER) {
         fout << "  li t0, " << branch.cond->kind.data.integer.value << endl;
     } else {
-        fout << "  lw t0, " << st.getbias(branch.cond) << "(sp)" << endl;
+        fout << "  li t2, " << st.getbias(branch.cond) << endl;
+        fout << "  add t2, sp, t2" << endl;
+        fout << "  lw t0, 0(t2)" << endl;
     }
     string tmplabel = "L_";
     tmplabel += to_string(tracktmp++);
@@ -148,26 +154,34 @@ void visit_koopa(const koopa_raw_branch_t& branch, ofstream& fout) {
 }
 
 void visit_koopa(const koopa_raw_load_t& load, ofstream& fout) {
-    fout << "  lw t0, " << st.getbias(load.src) << "(sp)" << endl;
+    fout << "  li t2, " << st.getbias(load.src) << endl;
+    fout << "  add t2, sp, t2" << endl;
+    fout << "  lw t0, 0(t2)" << endl;
 }
 
 void visit_koopa(const koopa_raw_store_t& store, ofstream& fout) {
     if (store.value->kind.tag == KOOPA_RVT_INTEGER) {
         fout << "  li t0, " << store.value->kind.data.integer.value << endl;
     } else {
-        fout << "  lw t0, " << st.getbias(store.value) << "(sp)" << endl;
+        fout << "  li t2, " << st.getbias(store.value) << endl;
+        fout << "  add t2, sp, t2" << endl;
+        fout << "  lw t0, 0(t2)" << endl;
     }
-    fout << "  sw t0, " << st.getbias(store.dest) << "(sp)" << endl;
+    fout << "  li t2, " << st.getbias(store.dest) << endl;
+    fout << "  add t2, sp, t2" << endl;
+    fout << "  sw t0, 0(t2)" << endl;
 }
 
 void visit_koopa(const koopa_raw_return_t& ret, ofstream& fout) {
     if (ret.value->kind.tag == KOOPA_RVT_INTEGER) {
         fout << "  li a0, " << ret.value->kind.data.integer.value << endl;
     } else {
-        fout << "  lw a0, " << st.getbias(ret.value) << "(sp)" << endl;
+        fout << "  li t2, " << st.getbias(ret.value) << endl;
+        fout << "  add t2, sp, t2" << endl;
+        fout << "  lw a0, 0(t2)" << endl;
     }
-    fout << "  li t0, " << st.getnum() << endl;
-    fout << "  addi sp, sp, t0" << endl;
+    fout << "  li t2, " << st.getnum() << endl;
+    fout << "  add sp, sp, t2" << endl;
     fout << "  ret" << endl;
 }
 
@@ -180,12 +194,16 @@ void visit_koopa(const koopa_raw_binary_t& binary, ofstream& fout) {
     if (lhs->kind.tag == KOOPA_RVT_INTEGER) {
         fout << "  li t0, " << visit_koopa(lhs->kind.data.integer, fout) << endl;
     } else {
-        fout << "  lw t0, " << st.getbias(lhs) << "(sp)" << endl;
+        fout << "  li t2, " << st.getbias(lhs) << endl;
+        fout << "  add t2, sp, t2" << endl;
+        fout << "  lw t0, 0(t2)" << endl;
     }
     if (rhs->kind.tag == KOOPA_RVT_INTEGER) {
         fout << "  li t1, " << visit_koopa(rhs->kind.data.integer, fout) << endl;
     } else {
-        fout << "  lw t1, " << st.getbias(rhs) << "(sp)" << endl;
+        fout << "  li t2, " << st.getbias(rhs) << endl;
+        fout << "  add t2, sp, t2" << endl;
+        fout << "  lw t1, 0(t2)" << endl;
     }
     switch (binary.op) {
         case KOOPA_RBO_EQ:
