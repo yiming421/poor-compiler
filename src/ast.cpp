@@ -21,11 +21,13 @@ void CompUnitAst::dump(std::stringstream& out) {
 void FuncDefAst::dump(std::stringstream& out) {
     out << "fun @" << ident << "(): ";
     func_type->dump(out);
+    out << "{" << std::endl;
     end = false;
     block->dump(out);
     if (!end) {
         out << "  ret 0" << std::endl;
     }
+    out << "}" << std::endl;
 }
 
 void FuncTypeAst::dump(std::stringstream& out) {
@@ -37,11 +39,9 @@ void BlockAst::dump(std::stringstream& out) {
         return;
     }
     if (flag) {
-        out << "{" << std::endl;
         out << "%entry:" << std::endl;
         blockitem_list->idx = idx;
         blockitem_list->dump(out);
-        out << "}" << std::endl;
     } else {
         blockitem_list->idx = idx;
         blockitem_list->dump(out);
@@ -226,12 +226,14 @@ void OtherStmtAst::dump(std::stringstream& out) {
             break;
         }
         case 7: {
+            assert(idx != 0);
             string end_label = count.getlabel("end", idx);
             printer.print_jump(end_label, out);
             end = true;
             break;
         }
         case 6: {
+            assert(idx != 0);
             string entry_label = count.getlabel("entry", idx);
             printer.print_jump(entry_label, out);
             end = true;
