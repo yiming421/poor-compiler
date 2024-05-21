@@ -23,6 +23,9 @@ void FuncDefAst::dump(std::stringstream& out) {
     func_type->dump(out);
     end = false;
     block->dump(out);
+    if (!end) {
+        out << "  ret 0" << std::endl;
+    }
 }
 
 void FuncTypeAst::dump(std::stringstream& out) {
