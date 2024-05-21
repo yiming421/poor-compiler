@@ -21,6 +21,7 @@ void CompUnitAst::dump(std::stringstream& out) {
 void FuncDefAst::dump(std::stringstream& out) {
     out << "fun @" << ident << "(): ";
     func_type->dump(out);
+    end = false;
     block->dump(out);
 }
 
@@ -78,6 +79,7 @@ void StmtAst::dump(std::stringstream& out) {
 
 void IfStmtAst::dump(std::stringstream& out) {
     if (stmt != nullptr) {
+        end = false;
         exp->dump(out);
         count.cnt++;
         string then_label = count.getlabel("then");
@@ -97,6 +99,7 @@ void IfStmtAst::dump(std::stringstream& out) {
         }
         printer.print_label(end_label, out);
     } else {
+        end = false;
         exp->dump(out);
         count.cnt++;
         string then_label = count.getlabel("then");
@@ -110,7 +113,6 @@ void IfStmtAst::dump(std::stringstream& out) {
         printer.print_label(then_label, out);
         with_else->idx = idx;
         with_else->dump(out);
-        bool flag1 = end;
         if (!end) {
             printer.print_jump(end_label, out);
         } else {
@@ -119,17 +121,12 @@ void IfStmtAst::dump(std::stringstream& out) {
         printer.print_label(else_label, out);
         if_stmt->idx = idx;
         if_stmt->dump(out);
-        bool flag2 = end;
         if (!end) {
             printer.print_jump(end_label, out);
         } else {
             end = false;
         }
-        if (flag1 && flag2) {
-            end = true;
-        } else {
-            printer.print_label(end_label, out);
-        }
+        printer.print_label(end_label, out);
     }
 }
 
@@ -138,6 +135,7 @@ void WithElseAst::dump(std::stringstream& out) {
         other_stmt->idx = idx;
         other_stmt->dump(out);
     } else {
+        end = false;
         exp->dump(out);
         count.cnt++;
         string then_label = count.getlabel("then");
@@ -151,7 +149,6 @@ void WithElseAst::dump(std::stringstream& out) {
         printer.print_label(then_label, out);
         if_withelse->idx = idx;
         if_withelse->dump(out);
-        bool flag1 = end;
         if (!end) {
             printer.print_jump(end_label, out);
         } else {
@@ -160,17 +157,12 @@ void WithElseAst::dump(std::stringstream& out) {
         printer.print_label(else_label, out);
         else_withelse->idx = idx;
         else_withelse->dump(out);
-        bool flag2 = end;
         if (!end) {
             printer.print_jump(end_label, out);
         } else {
             end = false;
         }
-        if (flag1 && flag2) {
-            end = true;
-        } else {
-            printer.print_label(end_label, out);
-        }
+        printer.print_label(end_label, out);
     }
 }
 
@@ -206,6 +198,7 @@ void OtherStmtAst::dump(std::stringstream& out) {
             exp->dump(out);
             break;
         case 5: {
+            end = false;
             count.cnt++;
             stmt->idx = count.cnt;
             string entry_label = count.getlabel("entry");
@@ -231,8 +224,6 @@ void OtherStmtAst::dump(std::stringstream& out) {
         }
         case 7: {
             assert(idx != 0);
-            count.cnt++;
-            string tmp_label = count.getlabel("tmp");
             string end_label = count.getlabel("end", idx);
             printer.print_jump(end_label, out);
             end = true;
@@ -240,9 +231,7 @@ void OtherStmtAst::dump(std::stringstream& out) {
         }
         case 6: {
             assert(idx != 0);
-            count.cnt++;
             string entry_label = count.getlabel("entry", idx);
-            string tmp_label = count.getlabel("tmp");
             printer.print_jump(entry_label, out);
             end = true;
             break;
