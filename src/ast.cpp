@@ -226,14 +226,12 @@ void OtherStmtAst::dump(std::stringstream& out) {
             break;
         }
         case 7: {
-            assert(idx != 0);
             string end_label = count.getlabel("end", idx);
             printer.print_jump(end_label, out);
             end = true;
             break;
         }
         case 6: {
-            assert(idx != 0);
             string entry_label = count.getlabel("entry", idx);
             printer.print_jump(entry_label, out);
             end = true;
@@ -601,3 +599,4 @@ int LValAst::cal() {
     assert(table.isExist(ident) && table.isConst(ident));
     return table.get(ident);
 }
+

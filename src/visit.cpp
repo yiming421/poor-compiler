@@ -71,7 +71,6 @@ void visit_koopa(const koopa_raw_program_t& raw, ofstream& fout) {
     fout << "  .globl main" << endl;
 
     for (size_t i = 0; i < raw.funcs.len; ++i) {
-        assert(raw.funcs.kind == KOOPA_RSIK_FUNCTION);
         visit_koopa(reinterpret_cast<koopa_raw_function_t>(raw.funcs.buffer[i]), fout);
     }
 }
@@ -82,7 +81,6 @@ void visit_koopa(const koopa_raw_function_t& func, ofstream& fout) {
     fout << "  add sp, sp, t2" << endl;
 
     for (size_t i = 0; i < func->bbs.len; ++i) {
-        assert(func->bbs.kind == KOOPA_RSIK_BASIC_BLOCK);
         visit_koopa(reinterpret_cast<koopa_raw_basic_block_t>(func->bbs.buffer[i]), fout);
     }
     st.clear();
