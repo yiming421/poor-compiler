@@ -22,15 +22,11 @@ std::unordered_map<std::string, std::string> op2str = {
 };
 
 std::string bs_cnt::getlabel(std::string label) {
-    if (label == "then") {
-        return "then_" + std::to_string(cnt);
-    } else if (label == "else") {
-        return "else_" + std::to_string(cnt);
-    } else if (label == "end") {
-        return "end_" + std::to_string(cnt);
-    }
-    assert(false);
-    return "";
+    return label + "_" + std::to_string(cnt);
+}
+
+std::string bs_cnt::getlabel(std::string label, int num) {
+    return label + "_" + std::to_string(num);
 }
 
 void Printer::print_lhs(std::unique_ptr<BaseAst>& ptr, std::stringstream& out) {

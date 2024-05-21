@@ -27,13 +27,13 @@ using namespace std;
     BaseAst* ast;
 }
 
-%token INT RETURN CONST IF ELSE
+%token INT RETURN CONST IF ELSE WHILE BREAK CONTINUE
 %token <str_val> IDENT MUL_OP ADD_OP CMP_OP EQ_OP LAND_OP LOR_OP OTHER_OP
 %token <int_val> INT_CONST
 
 %type <ast> FuncDef FuncType Block Stmt Exp PrimaryExp UnaryExp AddExp MulExp RelExp EqExp LAndExp LOrExp 
 Decl ConstDecl VarDecl VarDefList VarDef InitVal Btype ConstDefList ConstDef ConstInitVal BlockItem LVal 
-ConstExp BlockItemList WithElse OtherStmt
+ConstExp BlockItemList WithElse OtherStmt IfStmt
 %type <int_val> Number
 
 %%
@@ -113,27 +113,44 @@ OtherStmt: RETURN Exp ';' {
     auto ast = new OtherStmtAst();
     ast->type = 4;
     $$ = ast;
-};
-
-Stmt: IF '(' Exp ')' Stmt {
-    auto ast = new StmtAst();
+} | WHILE '(' Exp ')' Stmt {
+    auto ast = new OtherStmtAst();
     ast->exp = unique_ptr<BaseAst>($3);
     ast->stmt = unique_ptr<BaseAst>($5);
-    ast->type = 0;
+    ast->type = 5;
     $$ = ast;
-} | IF '(' Exp ')' WithElse ELSE Stmt {
+} | CONTINUE ';' {
+    auto ast = new OtherStmtAst();
+    ast->type = 6;
+    $$ = ast;
+} | BREAK ';' {
+    auto ast = new OtherStmtAst();
+    ast->type = 7;
+    $$ = ast;
+};
+
+Stmt: IfStmt {
     auto ast = new StmtAst();
+    ast->if_stmt = unique_ptr<BaseAst>($1);
+    $$ = ast;
+} | WithElse {
+    auto ast = new StmtAst();
+    ast->with_else = unique_ptr<BaseAst>($1);
+    $$ = ast;
+};
+
+IfStmt: IF '(' Exp ')' Stmt {
+    auto ast = new IfStmtAst();
+    ast->exp = unique_ptr<BaseAst>($3);
+    ast->stmt = unique_ptr<BaseAst>($5);
+    $$ = ast;
+} | IF '(' Exp ')' WithElse ELSE IfStmt {
+    auto ast = new IfStmtAst();
     ast->exp = unique_ptr<BaseAst>($3);
     ast->with_else = unique_ptr<BaseAst>($5);
-    ast->stmt = unique_ptr<BaseAst>($7);
-    ast->type = 1;
+    ast->if_stmt = unique_ptr<BaseAst>($7);
     $$ = ast;
-} | OtherStmt {
-    auto ast = new StmtAst();
-    ast->other_stmt = unique_ptr<BaseAst>($1);
-    ast->type = 2;
-    $$ = ast;
-}
+};
 
 WithElse: IF '(' Exp ')' WithElse ELSE WithElse{
     auto ast = new WithElseAst();

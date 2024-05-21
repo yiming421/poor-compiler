@@ -8,6 +8,7 @@
 class bs_cnt {
 public:
     std::string getlabel(std::string label);
+    std::string getlabel(std::string label, int num);
     int cnt = 0;
 };
 

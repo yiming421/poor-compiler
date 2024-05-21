@@ -35,6 +35,9 @@ OTHER_OP !
 "const" {return CONST; }
 "if" { return IF; }
 "else" { return ELSE; }
+"while" { return WHILE; }
+"break" { return BREAK; }
+"continue" { return CONTINUE; }
 
 {Identifier} { yylval.str_val = new string(yytext); return IDENT; }
 {Decimal} { yylval.int_val = strtol(yytext, nullptr, 0); return INT_CONST; }

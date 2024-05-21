@@ -63,11 +63,8 @@ public:
 
 class StmtAst : public BaseAst {
 public:
-    std::unique_ptr<BaseAst> exp;
-    std::unique_ptr<BaseAst> stmt;
+    std::unique_ptr<BaseAst> if_stmt;
     std::unique_ptr<BaseAst> with_else;
-    std::unique_ptr<BaseAst> other_stmt;
-    int type = 0;
     void dump(std::stringstream& out);
 };
 
@@ -80,11 +77,21 @@ public:
     void dump(std::stringstream& out);
 };
 
+class IfStmtAst : public BaseAst {
+public:
+    std::unique_ptr<BaseAst> exp;
+    std::unique_ptr<BaseAst> stmt;
+    std::unique_ptr<BaseAst> with_else;
+    std::unique_ptr<BaseAst> if_stmt;
+    void dump(std::stringstream& out);
+};
+
 class OtherStmtAst : public BaseAst {
 public:
     std::unique_ptr<BaseAst> exp;
     std::unique_ptr<BaseAst> lval;
     std::unique_ptr<BaseAst> block;
+    std::unique_ptr<BaseAst> stmt;
     int type = 0;
     void dump(std::stringstream& out);
 };

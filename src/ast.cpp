@@ -35,92 +35,104 @@ void BlockAst::dump(std::stringstream& out) {
     if (flag) {
         out << "{" << std::endl;
         out << "%entry:" << std::endl;
+        blockitem_list->idx = idx;
         blockitem_list->dump(out);
         out << "}" << std::endl;
     } else {
+        blockitem_list->idx = idx;
         blockitem_list->dump(out);
     }
 }
 
 void BlockItemListAst::dump(std::stringstream& out) {
+    blockitem->idx = idx;
     blockitem->dump(out);
     if (blockitem_list != nullptr && !end) {
+        blockitem_list->idx = idx;
         blockitem_list->dump(out);
     }
 }
 
 void BlockItemAst::dump(std::stringstream& out) {
     if (stmt != nullptr) {
+        stmt->idx = idx;
         stmt->dump(out);
     } else {
         decl->dump(out);
     }
 }
 
+
 void StmtAst::dump(std::stringstream& out) {
-    switch (type) {
-        case 0: {
-            exp->dump(out);
-            count.cnt++;
-            string then_label = count.getlabel("then");
-            string end_label = count.getlabel("end");
-            if (exp->idx == -1) {
-                printer.print_br(false, exp->num, then_label, end_label, out);
-            } else {
-                printer.print_br(true, exp->idx, then_label, end_label, out);
-            }
-            printer.print_label(then_label, out);
-            stmt->dump(out);
-            if (!end) {
-                printer.print_jump(end_label, out);
-            } else {
-                end = false;
-            }
+    if (if_stmt != nullptr) {
+        if_stmt->idx = idx;
+        if_stmt->dump(out);
+    } else {
+        with_else->idx = idx;
+        with_else->dump(out);
+    }
+}
+
+void IfStmtAst::dump(std::stringstream& out) {
+    if (stmt != nullptr) {
+        exp->dump(out);
+        count.cnt++;
+        string then_label = count.getlabel("then");
+        string end_label = count.getlabel("end");
+        if (exp->idx == -1) {
+            printer.print_br(false, exp->num, then_label, end_label, out);
+        } else {
+            printer.print_br(true, exp->idx, then_label, end_label, out);
+        }
+        printer.print_label(then_label, out);
+        stmt->idx = idx;
+        stmt->dump(out);
+        if (!end) {
+            printer.print_jump(end_label, out);
+        } else {
+            end = false;
+        }
+        printer.print_label(end_label, out);
+    } else {
+        exp->dump(out);
+        count.cnt++;
+        string then_label = count.getlabel("then");
+        string else_label = count.getlabel("else");
+        string end_label = count.getlabel("end");
+        if (exp->idx == -1) {
+            printer.print_br(false, exp->num, then_label, else_label, out);
+        } else {
+            printer.print_br(true, exp->idx, then_label, else_label, out);
+        }
+        printer.print_label(then_label, out);
+        with_else->idx = idx;
+        with_else->dump(out);
+        bool flag1 = end;
+        if (!end) {
+            printer.print_jump(end_label, out);
+        } else {
+            end = false;
+        }
+        printer.print_label(else_label, out);
+        if_stmt->idx = idx;
+        if_stmt->dump(out);
+        bool flag2 = end;
+        if (!end) {
+            printer.print_jump(end_label, out);
+        } else {
+            end = false;
+        }
+        if (flag1 && flag2) {
+            end = true;
+        } else {
             printer.print_label(end_label, out);
-            break;
         }
-        case 1: {
-            exp->dump(out);
-            count.cnt++;
-            string then_label = count.getlabel("then");
-            string else_label = count.getlabel("else");
-            string end_label = count.getlabel("end");
-            if (exp->idx == -1) {
-                printer.print_br(false, exp->num, then_label, else_label, out);
-            } else {
-                printer.print_br(true, exp->idx, then_label, else_label, out);
-            }
-            printer.print_label(then_label, out);
-            with_else->dump(out);
-            bool flag1 = end;
-            if (!end) {
-                printer.print_jump(end_label, out);
-            } else {
-                end = false;
-            }
-            printer.print_label(else_label, out);
-            stmt->dump(out);
-            bool flag2 = end;
-            if (!end) {
-                printer.print_jump(end_label, out);
-            } else {
-                end = false;
-            }
-            if (flag1 && flag2) {
-                end = true;
-            } else {
-                printer.print_label(end_label, out);
-            }
-            break;
-        }
-        default:
-            other_stmt->dump(out);
-            break;
     }
 }
 
 void WithElseAst::dump(std::stringstream& out) {
     if (other_stmt != nullptr) {
+        other_stmt->idx = idx;
         other_stmt->dump(out);
     } else {
         exp->dump(out);
@@ -134,6 +146,7 @@ void WithElseAst::dump(std::stringstream& out) {
             printer.print_br(true, exp->idx, then_label, else_label, out);
         }
         printer.print_label(then_label, out);
+        if_withelse->idx = idx;
         if_withelse->dump(out);
         bool flag1 = end;
         if (!end) {
@@ -142,6 +155,7 @@ void WithElseAst::dump(std::stringstream& out) {
             end = false;
         }
         printer.print_label(else_label, out);
+        else_withelse->idx = idx;
         else_withelse->dump(out);
         bool flag2 = end;
         if (!end) {
@@ -181,12 +195,55 @@ void OtherStmtAst::dump(std::stringstream& out) {
             break;
         case 2:
             table.push();
+            block->idx = idx;
             block->dump(out);
             table.pop();
             break;
         case 3:
             exp->dump(out);
             break;
+        case 5: {
+            count.cnt++;
+            stmt->idx = count.cnt;
+            string entry_label = count.getlabel("entry");
+            string body_label = count.getlabel("body");
+            string end_label = count.getlabel("end");
+            printer.print_jump(entry_label, out);
+            printer.print_label(entry_label, out);
+            exp->dump(out);
+            if (exp->idx == -1) {
+                printer.print_br(false, exp->num, body_label, end_label, out);
+            } else {
+                printer.print_br(true, exp->idx, body_label, end_label, out);
+            }
+            printer.print_label(body_label, out);
+            stmt->dump(out);
+            if (!end) {
+                printer.print_jump(entry_label, out);
+            } else {
+                end = false;
+            }
+            printer.print_label(end_label, out);
+            break;
+        }
+        case 7: {
+            assert(idx != 0);
+            count.cnt++;
+            string tmp_label = count.getlabel("tmp");
+            string end_label = count.getlabel("end", idx);
+            printer.print_jump(end_label, out);
+            printer.print_label(tmp_label, out);
+            break;
+        }
+        case 6: {
+            assert(idx != 0);
+            count.cnt++;
+            string entry_label = count.getlabel("entry", idx);
+            string tmp_label = count.getlabel("tmp");
+            printer.print_jump(entry_label, out);
+            printer.print_label(tmp_label, out);
+            break;
+        }
         default:
             break;
     }
