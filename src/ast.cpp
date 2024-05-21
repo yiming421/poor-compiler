@@ -47,7 +47,7 @@ void BlockAst::dump(std::stringstream& out) {
 void BlockItemListAst::dump(std::stringstream& out) {
     blockitem->idx = idx;
     blockitem->dump(out);
-    if (blockitem_list != nullptr && !end) {
+    if (blockitem_list != nullptr) {
         blockitem_list->idx = idx;
         blockitem_list->dump(out);
     }
@@ -64,6 +64,9 @@ void BlockItemAst::dump(std::stringstream& out) {
 
 
 void StmtAst::dump(std::stringstream& out) {
+    if (end) {
+        return;
+    }
     if (if_stmt != nullptr) {
         if_stmt->idx = idx;
         if_stmt->dump(out);
@@ -232,7 +235,7 @@ void OtherStmtAst::dump(std::stringstream& out) {
             string tmp_label = count.getlabel("tmp");
             string end_label = count.getlabel("end", idx);
             printer.print_jump(end_label, out);
-            printer.print_label(tmp_label, out);
+            end = true;
             break;
         }
         case 6: {
@@ -241,7 +244,7 @@ void OtherStmtAst::dump(std::stringstream& out) {
             string entry_label = count.getlabel("entry", idx);
             string tmp_label = count.getlabel("tmp");
             printer.print_jump(entry_label, out);
-            printer.print_label(tmp_label, out);
+            end = true;
             break;
         }
         default:
