@@ -295,6 +295,7 @@ class InitValAst : public BaseAst {
 public:
     std::unique_ptr<BaseAst> exp;
     void dump(std::stringstream& out);
+    int cal();
 };
 
 class ConstExpAst : public BaseAst {

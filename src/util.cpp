@@ -121,7 +121,7 @@ void Printer::print_decl(std::stringstream& out) {
 }
 
 void Printer::print_global_alloc(std::string& ident, int num, std::stringstream& out, GlobalSymbolTable& table) {
-    out << "  global @" << ident + std::to_string(0) << " = alloc i32, ";
+    out << "global @" << ident + std::to_string(0) << " = alloc i32, ";
     if (num == 0) {
         out << "zeroinit" << std::endl;
     } else {

@@ -726,10 +726,8 @@ void VarDefAst::dump(std::stringstream& out) {
         }
     } else {
         if (initval != nullptr) {
-            initval->dump(out);
-            assert(initval->idx == -1);
             table.gst.insert_var(ident, 0, false);
-            printer.print_global_alloc(ident, initval->num, out, table.gst);
+            printer.print_global_alloc(ident, initval->cal(), out, table.gst);
         } else {
             table.gst.insert_var(ident, 0, false);
             printer.print_global_alloc(ident, 0, out, table.gst);
@@ -755,5 +753,9 @@ int ConstExpAst::cal() {
 int LValAst::cal() {
     assert(table.isExist(ident) && table.isConst(ident));
     return table.get(ident);
+}
+
+int InitValAst::cal() {
+    return exp->cal();
 }
 
