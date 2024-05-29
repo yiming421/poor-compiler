@@ -250,7 +250,6 @@ void WithElseAst::dump(std::stringstream& out) {
 void OtherStmtAst::dump(std::stringstream& out) {
     switch (type) {
         case 0:
-            assert(flag_type);
             exp->dump(out);
             if (exp->idx == -1) {
                 out << "  ret " << exp->num << std::endl;
