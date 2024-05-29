@@ -319,7 +319,6 @@ void OtherStmtAst::dump(std::stringstream& out) {
             break;
         }
         case 8: 
-            assert(!flag_type);
             out << "  ret" << std::endl;
             end = true;
             break;
