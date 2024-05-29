@@ -67,21 +67,21 @@ void Printer::print_unary(int idx, std::string& op, std::unique_ptr<BaseAst>& rh
 
 void Printer::print_load(int idx, std::string& ident, std::stringstream& out, SymbolTable& table) {
     int id = table.getID(ident);
-    out << "  %" << idx << " = load @" << (ident + std::to_string(id)) << std::endl;
+    out << "  %" << idx << " = load @" << (ident + '_' + std::to_string(id)) << std::endl;
 }
 
 void Printer::print_store(bool flag, int idx, std::string& ident, std::stringstream& out, SymbolTable& table) {
     int id = table.getID(ident);
     if (flag) {
-        out << "  store %" << idx << ", @" << (ident + std::to_string(id)) << std::endl;
+        out << "  store %" << idx << ", @" << (ident + '_' + std::to_string(id)) << std::endl;
     } else {
-        out << "  store " << idx << ", @" << ident + std::to_string(id) << std::endl;
+        out << "  store " << idx << ", @" << ident + '_' + std::to_string(id) << std::endl;
     }
 }
 
 void Printer::print_alloc(std::string& ident, std::stringstream& out, SymbolTable& table) {
     int id = table.getID(ident);
-    out << "  @" << (ident + std::to_string(id)) << " = alloc i32" << std::endl;
+    out << "  @" << (ident + '_' + std::to_string(id)) << " = alloc i32" << std::endl;
 }
 
 void Printer::print_br(bool flag, int idx, std::string& label1, std::string& label2, std::stringstream& out) {
@@ -121,7 +121,7 @@ void Printer::print_decl(std::stringstream& out) {
 }
 
 void Printer::print_global_alloc(std::string& ident, int num, std::stringstream& out, GlobalSymbolTable& table) {
-    out << "global @" << ident + std::to_string(0) << " = alloc i32, ";
+    out << "global @" << ident + '_' + std::to_string(0) << " = alloc i32, ";
     if (num == 0) {
         out << "zeroinit" << std::endl;
     } else {

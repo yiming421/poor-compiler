@@ -87,7 +87,7 @@ void FuncFparamsAst::dump(std::stringstream& out, vector<pair<string, string>>& 
 
 void FuncFparamAst::dump(std::stringstream& out) {
     table.insert(ident);
-    out << "@" << ident + std::to_string(table.getID(ident) - 1) << ": " << type;
+    out << "@" << ident + '_' + std::to_string(table.getID(ident) - 1) << ": " << type;
 }
 
 void BTypeAst::dump(std::stringstream& out) {
@@ -117,8 +117,8 @@ void BlockAst::dump(std::stringstream& out, vector<pair<string, string>>& params
     out << "%entry:" << std::endl;
     for (auto& param : params) {
         int num = table.getID(param.second);
-        out << "  @" << param.second + std::to_string(num) << " = alloc i32" << std::endl;
-        out << "  store @" << param.second + std::to_string(num - 1) << ", @" << param.second + std::to_string(num) << std::endl;
+        out << "  @" << param.second + '_' +std::to_string(num) << " = alloc i32" << std::endl;
+        out << "  store @" << param.second + '_' + std::to_string(num - 1) << ", @" << param.second + '_' + std::to_string(num) << std::endl;
     }
     if (blockitem_list == nullptr) {
         return;
