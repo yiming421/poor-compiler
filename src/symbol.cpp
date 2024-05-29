@@ -100,10 +100,10 @@ int SymbolTable::getID(std::string& name) const {
 
 void SymbolTable::push() {
     st.push_back(table);
-    id++;
     len++;
     table.first.clear();
     table.second = id;
+    id++;
 } // performance
 
 void SymbolTable::pop() {
