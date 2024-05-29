@@ -11,27 +11,92 @@ int BaseAst::id = 0;
 
 Printer printer;
 SymbolTable table;
+GlobalSymbolTable& gst = table.gst;
 bool end = false;
 bs_cnt count;
+bool flag_main = false;
+bool flag_type = false;
  
 void CompUnitAst::dump(std::stringstream& out) {
-    func_def->dump(out);
+    printer.print_decl(out);
+    comp_unit_list->dump(out);
+    assert(flag_main);
+}
+
+void CompUnitListAst::dump(std::stringstream& out) {
+    decl_or_def->dump(out);
+    if (comp_unit_list != nullptr) {
+        comp_unit_list->dump(out);
+    }
+}
+
+void DeclOrDefAst::dump(std::stringstream& out) {
+    if (decl != nullptr) {
+        decl->idx = -1;
+        decl->dump(out);
+    } else {
+        func_def->dump(out);
+    }
 }
 
 void FuncDefAst::dump(std::stringstream& out) {
-    out << "fun @" << ident << "(): ";
+    table.clear();
+    reinterpret_cast<BlockAst&>(*block).flag = true;   
+    out << "fun @" << ident << "(";
+    if (ident == "main") {
+        flag_main = true;
+    }
+    vector<pair<string, string>> params;
+    if (func_fparams != nullptr) {
+        reinterpret_cast<FuncFparamsAst&>(*func_fparams).dump(out, params);
+    }
+    vector<string> pars;
+    for (auto& param : params) {
+        pars.push_back(param.first);
+    }
+    bool flag = false;
+    if (func_type->ident == "i32") {
+        flag = true;
+    } else {
+        flag = false;
+    }
+    assert(gst.insert_func(ident, pars, flag));
+    out << ")";
     func_type->dump(out);
-    out << "{" << std::endl;
+    out << " {" << std::endl;
     end = false;
-    block->dump(out);
+    reinterpret_cast<BlockAst&>(*block).dump(out, params);
     if (!end) {
-        out << "  ret 0" << std::endl;
+        if (flag_type) {
+            out << "  ret 0" << std::endl;
+        } else {
+            out << "  ret" << std::endl;
+        } 
     }
     out << "}" << std::endl;
 }
 
-void FuncTypeAst::dump(std::stringstream& out) {
-    out << type << " ";
+void FuncFparamsAst::dump(std::stringstream& out, vector<pair<string, string>>& params) {
+    func_fparam->dump(out);
+    params.push_back(std::make_pair(reinterpret_cast<FuncFparamAst&>(*func_fparam).type, func_fparam->ident));
+    if (func_fparams != nullptr) {
+        out << ", ";
+        reinterpret_cast<FuncFparamsAst&>(*func_fparams).dump(out, params);
+    }
+}
+
+void FuncFparamAst::dump(std::stringstream& out) {
+    table.insert(ident);
+    out << "@" << ident + std::to_string(table.getID(ident) - 1) << ": " << type;
+}
+
+void BTypeAst::dump(std::stringstream& out) {
+    if (ident == "i32") {
+        out << ": i32";
+        flag_type = true;
+    } else {
+        flag_type = false;
+    }
 }
 
 void BlockAst::dump(std::stringstream& out) {
@@ -46,6 +111,19 @@ void BlockAst::dump(std::stringstream& out) {
         blockitem_list->idx = idx;
         blockitem_list->dump(out);
     }
+}
+
+void BlockAst::dump(std::stringstream& out, vector<pair<string, string>>& params) {
+    out << "%entry:" << std::endl;
+    for (auto& param : params) {
+        int num = table.getID(param.second);
+        out << "  @" << param.second + std::to_string(num) << " = alloc i32" << std::endl;
+        out << "  store @" << param.second + std::to_string(num - 1) << ", @" << param.second + std::to_string(num) << std::endl;
+    }
+    if (blockitem_list == nullptr) {
+        return;
+    }
+    blockitem_list->dump(out);
 }
 
 void BlockItemListAst::dump(std::stringstream& out) {
@@ -172,6 +250,7 @@ void WithElseAst::dump(std::stringstream& out) {
 void OtherStmtAst::dump(std::stringstream& out) {
     switch (type) {
         case 0:
+            assert(flag_type);
             exp->dump(out);
             if (exp->idx == -1) {
                 out << "  ret " << exp->num << std::endl;
@@ -239,6 +318,11 @@ void OtherStmtAst::dump(std::stringstream& out) {
             end = true;
             break;
         }
+        case 8: 
+            assert(!flag_type);
+            out << "  ret" << std::endl;
+            end = true;
+            break;
         default:
             break;
     }
@@ -287,7 +371,7 @@ int PrimaryExpAst::cal() {
 }
 
 void UnaryExpAst::dump(std::stringstream& out) {
-    if (type != 0){
+    if (type == 1){
         unary_exp->dump(out);
         idx = BaseAst::id;
         if (op != "+"){
@@ -297,12 +381,58 @@ void UnaryExpAst::dump(std::stringstream& out) {
             idx = unary_exp->idx;
             num = unary_exp->num;
         }
-    } else {
+    } else if (type == 0) {
         primary_exp->dump(out);
         idx = primary_exp->idx;
         num = primary_exp->num;
         ident = primary_exp->ident;
+    } else {
+        assert(gst.isExist_func(ident));
+        bool flag = gst.func_table[ident].second;
+        vector<string>& params = gst.getParams(ident);
+        vector<pair<string, pair<bool, int>>> args;
+        if (func_rparams != nullptr) {
+            reinterpret_cast<FuncRparamsAst&>(*func_rparams).dump(out, args);
+        }
+        for (int i = 0; i < args.size(); i++) {
+            assert(args[i].first == params[i]);
+        }
+        if (flag) {
+            out << "  %" << BaseAst::id << " = call @" << ident << "(";
+            idx = BaseAst::id;
+            BaseAst::id++;
+        } else {
+            out << "  call @" << ident << "(";
+        }
+        for (int i = 0; i < args.size(); i++) {
+            if (args[i].second.first) {
+                out << "%" << args[i].second.second;
+            } else {
+                out << args[i].second.second;
+            }
+            if (i != args.size() - 1) {
+                out << ", ";
+            }
+        }
+        out << ")" << std::endl;
     }
+}
+
+void FuncRparamsAst::dump(std::stringstream& out, vector<pair<string, pair<bool, int>>>& params) {
+    auto ptr = reinterpret_cast<FuncRparamAst*>(func_rparam.get());
+    ptr->dump(out);
+    bool flag = (ptr->idx != -1);
+    int num = (flag? ptr->idx : ptr->num);
+    params.push_back(std::make_pair(ptr->btype, std::make_pair(flag, num)));
+    if (func_rparams != nullptr) {
+        reinterpret_cast<FuncRparamsAst&>(*func_rparams).dump(out, params);
+    }
+}
+
+void FuncRparamAst::dump(std::stringstream& out) {
+    exp->dump(out);
+    idx = exp->idx;
+    num = exp->num;
 }
 
 int UnaryExpAst::cal() {
@@ -530,34 +660,42 @@ int LOrExpAst::cal() {
 
 void DeclAst::dump(std::stringstream& out) {
     if (const_decl != nullptr) {
+        const_decl->idx = idx;
         const_decl->cal();
     } else {
+        var_decl->idx = idx;
         var_decl->dump(out);
     }
 }
 
 int ConstDeclAst::cal() {
     assert(const_def_list != nullptr);
+    const_def_list->idx = idx;
     const_def_list->cal();
     return 0;
 }
 
 void VarDeclAst::dump(std::stringstream& out) {
+    var_def_list->idx = idx;
     var_def_list->dump(out);
 }
 
 int ConstDefListAst::cal() {
     assert(const_def != nullptr);
+    const_def->idx = idx;
     const_def->cal();
     if (const_def_list != nullptr) {
+        const_def_list->idx = idx;
         const_def_list->cal();
     }
     return 0;
 }
 
 void VarDefListAst::dump(std::stringstream& out) {
+    var_def->idx = idx;
     var_def->dump(out);
     if (var_def_list != nullptr) {
+        var_def_list->idx = idx;
         var_def_list->dump(out);
     }
 }
@@ -565,19 +703,36 @@ void VarDefListAst::dump(std::stringstream& out) {
 int ConstDefAst::cal() {
     assert(const_init_val != nullptr);
     int num = const_init_val->cal();
+    if (idx != -1) {
+        table.insert(ident, num);
+    } else {
+        table.gst.insert_var(ident, num, true);
+    }
     table.insert(ident, num);
     return 0;
 }
 
 void VarDefAst::dump(std::stringstream& out) {
     table.insert(ident);
-    printer.print_alloc(ident, out, table);
-    if (initval != nullptr) {
-        initval->dump(out);
-        if (initval->idx == -1) {
-            printer.print_store(false, initval->num, ident, out, table);
+    if (idx != -1) {
+        printer.print_alloc(ident, out, table);
+        if (initval != nullptr) {
+            initval->dump(out);
+            if (initval->idx == -1) {
+                printer.print_store(false, initval->num, ident, out, table);
+            } else {
+                printer.print_store(true, initval->idx, ident, out, table);
+            }
+        }
+    } else {
+        if (initval != nullptr) {
+            initval->dump(out);
+            assert(initval->idx == -1);
+            table.gst.insert_var(ident, 0, false);
+            printer.print_global_alloc(ident, initval->num, out, table.gst);
         } else {
-            printer.print_store(true, initval->idx, ident, out, table);
+            table.gst.insert_var(ident, 0, false);
+            printer.print_global_alloc(ident, 0, out, table.gst);
         }
     }
 }

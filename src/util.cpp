@@ -108,3 +108,23 @@ void Printer::print_eq(bool flag, int idx, std::unique_ptr<BaseAst>& ptr, std::s
     }
     print_rhs(ptr, out);
 }
+
+void Printer::print_decl(std::stringstream& out) {
+    out << "decl @getint(): i32" << std::endl;
+    out << "decl @getch(): i32" << std::endl;
+    out << "decl @getarray(*i32): i32" << std::endl;
+    out << "decl @putint(i32)" << std::endl;
+    out << "decl @putch(i32)" << std::endl;
+    out << "decl @putarray(i32, *i32)" << std::endl;
+    out << "decl @starttime()" << std::endl;
+    out << "decl @stoptime()" << std::endl;
+}
+
+void Printer::print_global_alloc(std::string& ident, int num, std::stringstream& out, GlobalSymbolTable& table) {
+    out << "  global @" << ident + std::to_string(0) << " = alloc i32, ";
+    if (num == 0) {
+        out << "zeroinit" << std::endl;
+    } else {
+        out << num << std::endl;
+    }
+}

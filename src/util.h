@@ -23,8 +23,10 @@ public:
     void print_jump(std::string& label, std::stringstream& out);
     void print_label(std::string& label, std::stringstream& out);
     void print_eq(bool flag, int idx, std::unique_ptr<BaseAst>& ptr, std::stringstream& out);
-private:
     void print_lhs(std::unique_ptr<BaseAst>& ptr, std::stringstream& out);
     void print_rhs(std::unique_ptr<BaseAst>& ptr, std::stringstream& out);
+    void print_decl(std::stringstream& out);
+    void print_global_alloc(std::string& ident, int num, std::stringstream& out, GlobalSymbolTable& table);
+private:
     bs_cnt count;
 };

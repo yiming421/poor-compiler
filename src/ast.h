@@ -7,6 +7,7 @@
 
 using std::vector;
 using std::string;
+using std::pair;
 
 class BaseAst {
 protected:
@@ -22,15 +23,45 @@ public:
 
 class CompUnitAst : public BaseAst {
 public:
+    std::unique_ptr<BaseAst> comp_unit_list;
+    void dump(std::stringstream& out);
+};
+
+class CompUnitListAst : public BaseAst {
+public:
+    std::unique_ptr<BaseAst> decl_or_def;
+    std::unique_ptr<BaseAst> comp_unit_list;
+    void dump(std::stringstream& out);
+};
+
+class DeclOrDefAst : public BaseAst {
+public:
+    std::unique_ptr<BaseAst> decl;
     std::unique_ptr<BaseAst> func_def;
     void dump(std::stringstream& out);
 };
 
+
 class FuncDefAst : public BaseAst {
 public:
     std::unique_ptr<BaseAst> func_type;
-    std::string ident;
+    std::unique_ptr<BaseAst> func_fparams;
     std::unique_ptr<BaseAst> block;
+    void dump(std::stringstream& out);
+};
+
+class FuncFparamsAst : public BaseAst {
+public:
+    std::unique_ptr<BaseAst> func_fparams;
+    std::unique_ptr<BaseAst> func_fparam;
+    void dump(std::stringstream& out, vector<pair<string, string>>& params);
+    void dump(std::stringstream& out) {}
+};
+
+class FuncFparamAst : public BaseAst {
+public:
+    std::unique_ptr<BaseAst> btype;
+    std::string type = "i32";
     void dump(std::stringstream& out);
 };
 
@@ -44,6 +75,7 @@ class BlockAst : public BaseAst {
 public:
     std::unique_ptr<BaseAst> blockitem_list;
     void dump(std::stringstream& out);
+    void dump(std::stringstream& out, vector<pair<string, string>>& params);
     bool flag = false;
 };
 
@@ -118,9 +150,28 @@ public:
     std::unique_ptr<BaseAst> primary_exp;
     string op;
     std::unique_ptr<BaseAst> unary_exp;
+    string ident;
+    std::unique_ptr<BaseAst> func_rparams;
+
     int type = 0;
     void dump(std::stringstream& out);
     int cal();
+};
+
+class FuncRparamsAst : public BaseAst {
+public:
+    std::unique_ptr<BaseAst> exp;
+    std::unique_ptr<BaseAst> func_rparams;
+    std::unique_ptr<BaseAst> func_rparam;
+    void dump(std::stringstream& out) {}
+    void dump(std::stringstream& out, vector<pair<string, pair<bool, int>>>& params);
+};
+
+class FuncRparamAst : public BaseAst {
+public:
+    std::unique_ptr<BaseAst> exp;
+    std::string btype = "i32";
+    void dump(std::stringstream& out);
 };
 
 class AddExpAst : public BaseAst {
@@ -216,9 +267,9 @@ public:
     void dump(std::stringstream& out);
 };
 
-class BtypeAst : public BaseAst {
+class BTypeAst : public BaseAst {
 public:
-    string type = "int";
+    void dump(std::stringstream& out);
 };
 
 class ConstDefListAst : public BaseAst {
