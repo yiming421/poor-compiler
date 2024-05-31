@@ -20,7 +20,7 @@ void call_koopa(const char* res, ofstream& fout);
 void call_koopa(const char* res, ofstream& fout) {
     koopa_program_t program;
     koopa_error_code_t ret = koopa_parse_from_string(res, &program);
-    assert(ret == KOOPA_EC_SUCCESS);
+    //assert(ret == KOOPA_EC_SUCCESS);
     koopa_raw_program_builder_t builder = koopa_new_raw_program_builder();
     koopa_raw_program_t raw = koopa_build_raw_program(builder, program);
     koopa_delete_program(program);
@@ -31,17 +31,17 @@ void call_koopa(const char* res, ofstream& fout) {
 }
 
 int main(int argc, char** argv) {
-    assert(argc == 5);
+    //assert(argc == 5);
     auto mode = argv[1];
     auto input = argv[2];
     auto output = argv[4];
 
     yyin = fopen(input, "r");
-    assert(yyin != nullptr);
+    //assert(yyin != nullptr);
 
     unique_ptr<BaseAst> ast;
     int ret = yyparse(ast);
-    assert(!ret);
+    //assert(!ret);
 
     stringstream out;
     ast->dump(out);

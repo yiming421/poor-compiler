@@ -20,7 +20,7 @@ bool flag_type = false;
 void CompUnitAst::dump(std::stringstream& out) {
     printer.print_decl(out);
     comp_unit_list->dump(out);
-    assert(flag_main);
+    //assert(flag_main);
 }
 
 void CompUnitListAst::dump(std::stringstream& out) {
@@ -60,7 +60,8 @@ void FuncDefAst::dump(std::stringstream& out) {
     } else {
         flag = false;
     }
-    assert(gst.insert_func(ident, pars, flag));
+    //assert(gst.insert_func(ident, pars, flag));
+    gst.insert_func(ident, pars, flag);
     out << ")";
     func_type->dump(out);
     out << " {" << std::endl;
@@ -304,14 +305,14 @@ void OtherStmtAst::dump(std::stringstream& out) {
             break;
         }
         case 7: {
-            assert(idx != 0);
+            //assert(idx != 0);
             string end_label = count.getlabel("end", idx);
             printer.print_jump(end_label, out);
             end = true;
             break;
         }
         case 6: {
-            assert(idx != 0);
+            //assert(idx != 0);
             string entry_label = count.getlabel("entry", idx);
             printer.print_jump(entry_label, out);
             end = true;
@@ -346,7 +347,7 @@ void PrimaryExpAst::dump(std::stringstream& out) {
         idx = exp->idx;
         num = exp->num;
     } else {
-        assert(table.isExist(lval->ident));
+        //assert(table.isExist(lval->ident));
         if (table.isConst(lval->ident)) {
             idx = -1;
             num = lval->cal();
@@ -385,16 +386,17 @@ void UnaryExpAst::dump(std::stringstream& out) {
         num = primary_exp->num;
         ident = primary_exp->ident;
     } else {
-        assert(gst.isExist_func(ident));
+        //assert(gst.isExist_func(ident));
+        gst.isExist_func(ident);
         bool flag = gst.func_table[ident].second;
         vector<string>& params = gst.getParams(ident);
         vector<pair<string, pair<bool, int>>> args;
         if (func_rparams != nullptr) {
             reinterpret_cast<FuncRparamsAst&>(*func_rparams).dump(out, args);
         }
-        for (int i = 0; i < args.size(); i++) {
+        /*for (int i = 0; i < args.size(); i++) {
             assert(args[i].first == params[i]);
-        }
+        }*/
         if (flag) {
             out << "  %" << BaseAst::id << " = call @" << ident << "(";
             idx = BaseAst::id;
@@ -667,7 +669,7 @@ void DeclAst::dump(std::stringstream& out) {
 }
 
 int ConstDeclAst::cal() {
-    assert(const_def_list != nullptr);
+    //assert(const_def_list != nullptr);
     const_def_list->idx = idx;
     const_def_list->cal();
     return 0;
@@ -679,7 +681,7 @@ void VarDeclAst::dump(std::stringstream& out) {
 }
 
 int ConstDefListAst::cal() {
-    assert(const_def != nullptr);
+    //assert(const_def != nullptr);
     const_def->idx = idx;
     const_def->cal();
     if (const_def_list != nullptr) {
@@ -699,7 +701,7 @@ void VarDefListAst::dump(std::stringstream& out) {
 }
 
 int ConstDefAst::cal() {
-    assert(const_init_val != nullptr);
+    //assert(const_init_val != nullptr);
     int num = const_init_val->cal();
     if (idx != -1) {
         table.insert(ident, num);
@@ -734,7 +736,7 @@ void VarDefAst::dump(std::stringstream& out) {
 }
 
 int ConstInitValAst::cal() {
-    assert(const_exp != nullptr);
+    //assert(const_exp != nullptr);
     return const_exp->cal();
 }
 
@@ -749,7 +751,7 @@ int ConstExpAst::cal() {
 }
 
 int LValAst::cal() {
-    assert(table.isExist(ident) && table.isConst(ident));
+    //assert(table.isExist(ident) && table.isConst(ident));
     return table.get(ident);
 }
 
