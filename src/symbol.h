@@ -36,6 +36,6 @@ public:
 private:
     pair<unordered_map<string, pair<int, bool>>, int> table;
     vector<pair<unordered_map<string, pair<int, bool>>, int>> st;
-    int id = 1;
+    int id = 2;
     int len = 0;
 };
