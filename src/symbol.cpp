@@ -125,7 +125,7 @@ GlobalSymbolTable::GlobalSymbolTable() {
     vector<string> params3({"i32", "*i32"});
     func_table["getint"] = make_pair(params0, true);
     func_table["getch"] = make_pair(params0, true);
-    func_table["getarray"] = make_pair(params2, false);
+    func_table["getarray"] = make_pair(params2, true);
     func_table["putint"] = make_pair(params1, false);
     func_table["putch"] = make_pair(params1, false);
     func_table["putarray"] = make_pair(params3, false);
