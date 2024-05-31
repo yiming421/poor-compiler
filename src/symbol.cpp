@@ -94,7 +94,7 @@ int SymbolTable::getID(std::string& name) const {
     if (gst.isExist_var(name)) {
         return 0;
     }
-    //assert(false);
+    assert(false);
     return -1;
 }
 

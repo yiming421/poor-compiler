@@ -31,13 +31,13 @@ void call_koopa(const char* res, ofstream& fout) {
 }
 
 int main(int argc, char** argv) {
-    //assert(argc == 5);
+    assert(argc == 5);
     auto mode = argv[1];
     auto input = argv[2];
     auto output = argv[4];
 
     yyin = fopen(input, "r");
-    //assert(yyin != nullptr);
+    assert(yyin != nullptr);
 
     unique_ptr<BaseAst> ast;
     int ret = yyparse(ast);
