@@ -16,3 +16,5 @@ void visit_koopa(const koopa_raw_load_t& load, ofstream& fout);
 void visit_koopa(const koopa_raw_store_t& store, ofstream& fout);
 void visit_koopa(const koopa_raw_jump_t& jump, ofstream& fout);
 void visit_koopa(const koopa_raw_branch_t& branch, ofstream& fout);
+void visit_koopa(const koopa_raw_call_t& alloc, ofstream& fout);
+void visit_global(const koopa_raw_value_t& alloc, ofstream& fout);

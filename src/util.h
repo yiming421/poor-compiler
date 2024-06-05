@@ -2,8 +2,11 @@
 #include <memory>
 #include <iostream>
 #include <sstream>
+#include <fstream>
 #include "ast.h"
 #include "symbol.h"
+
+using std::ofstream;
 
 class bs_cnt {
 public:
@@ -29,4 +32,21 @@ public:
     void print_global_alloc(std::string& ident, int num, std::stringstream& out, GlobalSymbolTable& table);
 private:
     bs_cnt count;
+};
+
+class RiscvPrinter {
+public:
+    void print(string in, ofstream& out);
+    void print_add(int num, ofstream& out);
+    void print_sw(string op, int num, ofstream& out);
+    void print_jump(string label, ofstream& out);
+    void print_load_const(string dst, int num, ofstream& out);
+    void print_load(string dst, int num, ofstream& out);
+    void print_branch(string true_block, string false_block, string temp, ofstream& out);
+    void print_cmp(string op1, string op2, ofstream& out);
+    void print_op(string op, ofstream& out);
+    void print_ret(int num, ofstream& out);
+    void print_ra(string op, int num, ofstream& out);
+    void print_load_global(string dst, string ident, ofstream& out);
+    void print_sw_global(string src, string ident, ofstream& out);
 };

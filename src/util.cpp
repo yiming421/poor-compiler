@@ -3,9 +3,13 @@
 #include <sstream>
 #include <unordered_map>
 #include <cassert>
+#include <fstream>
 #include "ast.h"
 #include "util.h"
 #include "symbol.h"
+
+using std::ofstream;
+using std::endl;
 
 std::unordered_map<std::string, std::string> op2str = {
     {"+", "add"},
@@ -128,3 +132,73 @@ void Printer::print_global_alloc(std::string& ident, int num, std::stringstream&
         out << num << std::endl;
     }
 }
+
+void RiscvPrinter::print(string in, ofstream& out) {
+    out << in << endl;
+}
+
+void RiscvPrinter::print_add(int num, ofstream& out) {
+    out << "  li t2, " << num << endl;
+    out << "  add sp, sp, t2" << endl;
+}
+
+void RiscvPrinter::print_sw(string dst, int num, ofstream& out) {
+    out << "  li t2, " << num << endl;
+    out << "  add t2, sp, t2" << endl;
+    out << "  sw " << dst << ", 0(t2)" << endl;
+}
+
+void RiscvPrinter::print_jump(string label, ofstream& out) {
+    out << "  j " << label << endl;
+}
+
+void RiscvPrinter::print_load_const(string dst, int num, ofstream& out) {
+    out << "  li " << dst << ", " << num << endl;
+}
+
+void RiscvPrinter::print_load(string dst, int num, ofstream& out) {
+    out << "  li t2, " << num << endl;
+    out << "  add t2, sp, t2" << endl;
+    out << "  lw " << dst << ", 0(t2)" << endl;
+}
+
+void RiscvPrinter::print_branch(string true_block, string false_block, string temp, ofstream& out) {
+    out << "  bnez t0, " << temp << endl;
+    out << "  j " << false_block << endl;
+    out << temp << ":" << endl;
+    out << "  j " << true_block << endl;
+}
+
+void RiscvPrinter::print_cmp(string op1, string op2, ofstream& out) {
+    out << "  " << op1  << " t0, t0, t1" << endl;
+    out << "  " << op2 << " t0, t0" << endl;
+}
+
+void RiscvPrinter::print_op(string op, ofstream& out) {
+    out << "  " << op << " t0, t0, t1" << endl;
+}
+
+void RiscvPrinter::print_ret(int num, ofstream& out) {
+    if (num != 0) {
+        out << "  li t2, " << num << endl;
+        out << "  add sp, sp, t2" << endl;
+    }
+    out << "  ret" << endl;
+}
+
+void RiscvPrinter::print_ra(string op, int num, ofstream& out) {
+    out << "  li t2, " << num << endl;
+    out << "  add t2, sp, t2" << endl;
+    out << "  " << op << " ra, 0(t2)" << endl;
+}
+
+void RiscvPrinter::print_load_global(string dst, string ident, ofstream& out) {
+    out << "  la " << dst << ", " << ident << endl;
+    out << "  lw " << dst << ", 0(" << dst << ")" << endl;
+}
+
+void RiscvPrinter::print_sw_global(string src, string ident, ofstream& out) {
+    out << "  la t1, " << ident << endl;
+    out << "  sw " << src << ", 0(t1)" << endl;
+}
+
