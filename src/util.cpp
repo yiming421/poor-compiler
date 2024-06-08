@@ -10,6 +10,7 @@
 
 using std::ofstream;
 using std::endl;
+using std::string;
 
 std::unordered_map<std::string, std::string> op2str = {
     {"+", "add"},
@@ -133,6 +134,263 @@ void Printer::print_global_alloc(std::string& ident, int num, std::stringstream&
     }
 }
 
+void Printer::recursive_print(std::vector<int>& nums, int i, std::stringstream& out) {
+    if (i == nums.size()) {
+        out << "i32";
+        return;
+    }
+    out << '[';
+    recursive_print(nums, i + 1, out);
+    out << ", " << nums[i] << ']';
+}
+
+void Printer::print_alloc_arr(std::string& ident, vector<int>& nums, std::stringstream& out, SymbolTable& table) {
+    int id = table.getID(ident);
+    out << "  @" << (ident + '_' + std::to_string(id)) << " = alloc ";
+    recursive_print(nums, 0, out);
+} 
+
+void Printer::print_global_alloc_arr(std::string& ident, vector<int>& num, std::stringstream& out, GlobalSymbolTable& table) {
+    out << "global @" << ident + '_' + std::to_string(0) << " = alloc ";
+    recursive_print(num, 0, out);
+}
+
+void Printer::recursive_print_agg_const(vector<int>& data, vector<int>& nums, int& i, int j , std::stringstream& out) {
+    if (j == nums.size() - 1) {
+        out << '{';
+        for (int k = 0; k < nums[j]; k++) {
+            if (k != 0) {
+                out << ", ";
+            }
+            out << data[i++];
+        }
+        out << '}';
+        return;
+    }
+    out << '{';
+    for (int k = 0; k < nums[j]; k++) {
+        if (k != 0) {
+            out << ", ";
+        }
+        recursive_print_agg_const(data, nums, i, j + 1, out);
+    }
+    out << '}';
+}
+
+void Printer::print_aggregate_const(vector<int>& data, vector<int>& nums, std::stringstream& out) {
+    out << ", ";
+    int i = 0, j = 0;
+    recursive_print_agg_const(data, nums, i, j, out);
+    out << std::endl;
+}
+
+void Printer::print_aggregate_var(std::vector<pair<int, bool>>& data, vector<int>& nums, std::stringstream& out) {
+    out << ", ";
+    int i = 0, j = 0;
+    recursive_print_agg_var(data, nums, i, j, out);
+    out << std::endl;
+}
+
+void Printer::recursive_print_agg_var(std::vector<pair<int, bool>>& data, vector<int>& nums, int& i, int j, std::stringstream& out) {
+    if (j == nums.size() - 1) {
+        out << '{';
+        for (int k = 0; k < nums[j]; k++) {
+            if (k != 0) {
+                out << ", ";
+            }
+            if (data[i].second) {
+                out << '%' << data[i++].first;
+            } else {
+                out << data[i++].first;
+            }
+        }
+        out << '}';
+        return;
+    }
+    out << '{';
+    for (int k = 0; k < nums[j]; k++) {
+        if (k != 0) {
+            out << ", ";
+        }
+        recursive_print_agg_var(data, nums, i, j + 1, out);
+    }
+    out << '}';
+}
+
+void Printer::recursive_print_init_arr_const(std::string& ident, vector<int>& data, vector<int>& nums, int& idx, std::stringstream& out, 
+                                       SymbolTable& table, int& i, int j) {
+    if (j == nums.size() - 1) {
+        int oriidx = idx - 1;
+        for (int k = 0; k < nums[j]; k++) {
+            out << "  %" << idx << " = getelemptr %" << oriidx  << ", " << k << std::endl;
+            out << "  store " << data[i++] << ", %" << idx << std::endl;
+            idx += 1;
+        }
+        return;
+    } else {
+        int oriidx = idx - 1;
+        for (int k = 0; k < nums[j]; k++) {
+            out << "  %" << idx << " = getelemptr %" << oriidx << ", " << k << std::endl;
+            idx += 1;
+            recursive_print_init_arr_const(ident, data, nums, idx, out, table, i, j + 1);
+        }
+    }
+}
+
+void Printer::print_init_arr_const(std::string& ident, vector<int>& data, vector<int>& nums, int& idx, std::stringstream& out, SymbolTable& table) {
+    int i = 0;
+    for (int k = 0; k < nums[0]; k++) {
+        out << "  %" << idx << " = getelemptr @" << (ident + '_' + std::to_string(table.getID(ident))) << ", " << k << std::endl;
+        if(nums.size() == 1) {
+            out << "  store " << data[i++] << ", %" << idx << std::endl;
+            idx += 1;
+        } else {
+            idx += 1;
+            recursive_print_init_arr_const(ident, data, nums, idx, out, table, i, 1);
+        }
+    }
+}
+
+void Printer::recursive_print_init_arr_var(std::string& ident, vector<pair<int, bool>>& data, vector<int>& nums, int& idx, std::stringstream& out, 
+                                     SymbolTable& table, int& i, int j) {
+    if (j == nums.size() - 1) {
+        int oriidx = idx - 1;
+        for (int k = 0; k < nums[j]; k++) {
+            out << "  %" << idx << " = getelemptr %" << oriidx  << ", " << k << std::endl;
+            if (data[i].second) {
+                out << "  store %" << data[i++].first << ", %" << idx << std::endl;
+            } else {
+                out << "  store " << data[i++].first << ", %" << idx << std::endl;
+            }
+            idx += 1;
+        }
+        return;
+    } else {
+        int oriidx = idx - 1;
+        for (int k = 0; k < nums[j]; k++) {
+            out << "  %" << idx << " = getelemptr %" << oriidx << ", " << k << std::endl;
+            idx += 1;
+            recursive_print_init_arr_var(ident, data, nums, idx, out, table, i, j + 1);
+        }
+    }
+}
+
+void Printer::print_init_arr_var(std::string& ident, vector<pair<int, bool>>& data, vector<int>& nums, int& idx, std::stringstream& out, SymbolTable& table) {
+    int i = 0;
+    for (int k = 0; k < nums[0]; k++) {
+        out << "  %" << idx << " = getelemptr @" << (ident + '_' + std::to_string(table.getID(ident))) << ", " << k << std::endl;
+        if (nums.size() == 1) {
+            if (data[i].second) {
+                out << "  store %" << data[i++].first << ", %" << idx << std::endl;
+            } else {
+                out << "  store " << data[i++].first << ", %" << idx << std::endl;
+            }
+            idx += 1;
+        } else {
+            idx += 1;
+            recursive_print_init_arr_var(ident, data, nums, idx, out, table, i, 1);
+        }
+    }
+}
+
+void Printer::print_store_array_const(string& ident, vector<pair<int, bool>>& nums, int idx, int num, std::stringstream& out, SymbolTable& table, bool flag) {
+    int id = table.getID(ident);
+    if (flag) {
+        out << "  %" << idx << " = load @" << (ident + '_' + std::to_string(id)) << std::endl;
+        out << "  %" << idx + 1 << " = getptr %" << idx << ", ";
+        idx += 1;
+    } else {
+        out << "  %" << idx << " = getelemptr @" << (ident + '_' + std::to_string(id)) << ", ";
+    }
+    if (nums[0].second) {
+        out << "%" << nums[0].first << std::endl;
+    } else {
+        out << nums[0].first << std::endl;
+    }
+    for (int i = 1; i < nums.size(); i++) {
+        idx += 1;
+        out << "  %" << idx << " = getelemptr %" << idx - 1 << ", ";
+        if (nums[i].second) {
+            out << "%" << nums[i].first << std::endl;
+        } else {
+            out << nums[i].first << std::endl;
+        }
+    }
+    out << "  store " << num << ", %" << idx << std::endl;
+}
+
+void Printer::print_load_array_const(string& ident, int i, int idx, std::stringstream& out, SymbolTable& table) {
+    int id = table.getID(ident);
+    out << "  %" << idx << " = getelemptr @" << (ident + '_' + std::to_string(id)) << ", " << i << std::endl;
+    out << "  %" << idx + 1 << " = load %" << idx << std::endl;
+}
+
+void Printer::print_store_array_var(std::string& ident, vector<pair<int, bool>>& nums, int idx, int num, std::stringstream& out, SymbolTable& table, bool flag) {
+    int id = table.getID(ident);
+    if (flag) {
+        out << "  %" << idx << " = load @" << (ident + '_' + std::to_string(id)) << std::endl;
+        out << "  %" << idx + 1 << " = getptr %" << idx << ", ";
+        idx += 1;
+    } else {
+        out << "  %" << idx << " = getelemptr @" << (ident + '_' + std::to_string(id)) << ", ";
+    }
+    if (nums[0].second) {
+        out << "%" << nums[0].first << std::endl;
+    } else {
+        out << nums[0].first << std::endl;
+    }
+    for (int i = 1; i < nums.size(); i++) {
+        idx += 1;
+        out << "  %" << idx << " = getelemptr %" << idx - 1 << ", ";
+        if (nums[i].second) {
+            out << "%" << nums[i].first << std::endl;
+        } else {
+            out << nums[i].first << std::endl;
+        }
+    }
+    out << "  store %" << num << ", %" << idx << std::endl;
+}
+
+void Printer::print_load_array(std::string& ident, vector<pair<int, bool>>& nums, int idx, std::stringstream& out, SymbolTable& table, bool flag) {
+    int id = table.getID(ident);
+    if (flag) {
+        out << "  %" << idx << " = load @" << (ident + '_' + std::to_string(id)) << std::endl;
+        out << "  %" << idx + 1 << " = getptr %" << idx << ", ";
+        idx += 1;
+    } else {
+        out << "  %" << idx << " = getelemptr @" << (ident + '_' + std::to_string(id)) << ", ";
+    }
+    if (nums[0].second) {
+        out << "%" << nums[0].first << std::endl;
+    } else {
+        out << nums[0].first << std::endl;
+    }
+    for (int i = 1; i < nums.size(); i++) {
+        idx += 1;
+        out << "  %" << idx << " = getelemptr %" << idx - 1 << ", ";
+        if (nums[i].second) {
+            out << "%" << nums[i].first << std::endl;
+        } else {
+            out << nums[i].first << std::endl;
+        }
+    }
+    out << "  %" << idx + 1 << " = load %" << idx << std::endl;
+}
+
+void Printer::print_funcfparam(std::string& ident, std::stringstream& out, SymbolTable& table, bool flag) {
+    out << "@" << ident + '_' + std::to_string(table.getID(ident) - 1) << ": ";
+    if (flag) {
+        out << "*i32";
+    } else {
+        out << "i32";
+    }
+}
+
+void Printer::print_funcfparam(std::string& ident, vector<int>& nums, std::stringstream& out, SymbolTable& table) {
+    out << "@" << ident + '_' + std::to_string(table.getID(ident) - 1) << ": *";
+    recursive_print(nums, 0, out);
+}
+
 void RiscvPrinter::print(string in, ofstream& out) {
     out << in << endl;
 }
@@ -201,4 +459,5 @@ void RiscvPrinter::print_sw_global(string src, string ident, ofstream& out) {
     out << "  la t1, " << ident << endl;
     out << "  sw " << src << ", 0(t1)" << endl;
 }
+
 

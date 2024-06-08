@@ -3,10 +3,12 @@
 #include <iostream>
 #include <sstream>
 #include <fstream>
+#include <vector>
 #include "ast.h"
 #include "symbol.h"
 
 using std::ofstream;
+using std::vector;
 
 class bs_cnt {
 public:
@@ -30,7 +32,26 @@ public:
     void print_rhs(std::unique_ptr<BaseAst>& ptr, std::stringstream& out);
     void print_decl(std::stringstream& out);
     void print_global_alloc(std::string& ident, int num, std::stringstream& out, GlobalSymbolTable& table);
+    void print_alloc_arr(std::string& ident, vector<int>& num, std::stringstream& out, SymbolTable& table);
+    void print_global_alloc_arr(std::string& ident, vector<int>& num, std::stringstream& out, GlobalSymbolTable& table);
+    void print_store_array_const(std::string& ident, vector<pair<int, bool>>& nums, int idx, int num, std::stringstream& out, SymbolTable& table, bool flag);
+    void print_load_array_const(std::string& ident, int i, int idx, std::stringstream& out, SymbolTable& table);
+    void print_aggregate_const(std::vector<int>& data, vector<int>& num, std::stringstream& out);
+    void print_store_array_var(std::string& ident, vector<pair<int, bool>>& nums, int idx, int num, std::stringstream& out, SymbolTable& table, bool flag);
+    void print_aggregate_var(std::vector<pair<int, bool>>& data, std::vector<int>& nums, std::stringstream& out);
+    void print_load_array(std::string& ident, vector<pair<int, bool>>& nums, int idx, std::stringstream& out, SymbolTable& table, bool flag);
+    void print_init_arr_const(std::string& ident, vector<int>& data, vector<int>& nums, int& idx, std::stringstream& out, SymbolTable& table);
+    void print_init_arr_var(std::string& ident, vector<pair<int, bool>>& data, vector<int>& nums, int& idx, std::stringstream& out, SymbolTable& table);
+    void print_funcfparam(std::string& ident, vector<int>& nums, std::stringstream& out, SymbolTable& table);
+    void print_funcfparam(std::string& ident, std::stringstream& out, SymbolTable& table, bool flag);
+    void recursive_print(std::vector<int>& nums, int i, std::stringstream& out);
 private:
+    void recursive_print_agg_const(vector<int>& data, vector<int>& nums, int& i, int j , std::stringstream& out);
+    void recursive_print_init_arr_const(std::string& ident, vector<int>& data, vector<int>& nums, int& idx, std::stringstream& out, 
+                                        SymbolTable& table, int& i, int j);
+    void recursive_print_agg_var(std::vector<pair<int, bool>>& data, vector<int>& nums, int& i, int j, std::stringstream& out);
+    void recursive_print_init_arr_var(std::string& ident, vector<pair<int, bool>>& data, vector<int>& nums, int& idx, std::stringstream& out, 
+                                        SymbolTable& table, int& i, int j);
     bs_cnt count;
 };
 

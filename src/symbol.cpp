@@ -18,10 +18,14 @@ bool SymbolTable::insert(std::string& name, int num) {
     return false;
 }
 
-bool SymbolTable::insert(std::string& name) {
+bool SymbolTable::insert(std::string& name, bool is_ptr) {
     auto& tab = table.first;
     if (tab.find(name) == tab.end()) {
-        tab[name] = std::make_pair(0, false);
+        if (is_ptr) {
+            tab[name] = std::make_pair(1, false);
+        } else {
+            tab[name] = std::make_pair(0, false);
+        }
         return true;
     }
     return false;

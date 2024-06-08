@@ -62,6 +62,8 @@ class FuncFparamAst : public BaseAst {
 public:
     std::unique_ptr<BaseAst> btype;
     std::string type = "i32";
+    std::unique_ptr<BaseAst> exp_list;
+    int type_flag = 0;
     void dump(std::stringstream& out);
 };
 
@@ -243,7 +245,7 @@ class ConstDeclAst : public BaseAst {
 public:
     std::unique_ptr<BaseAst> btype;
     std::unique_ptr<BaseAst> const_def_list;
-    int cal();
+    void dump(std::stringstream& out);
 };
 
 class VarDeclAst : public BaseAst {
@@ -264,6 +266,7 @@ class VarDefAst : public BaseAst {
 public:
     string ident;
     std::unique_ptr<BaseAst> initval;
+    std::unique_ptr<BaseAst> const_exp_list;
     void dump(std::stringstream& out);
 };
 
@@ -276,25 +279,43 @@ class ConstDefListAst : public BaseAst {
 public:
     std::unique_ptr<BaseAst> const_def;
     std::unique_ptr<BaseAst> const_def_list;
-    int cal();
+    void dump(std::stringstream& out);
 };
 
 class ConstDefAst : public BaseAst {
 public:
     std::unique_ptr<BaseAst> const_init_val;
+    std::unique_ptr<BaseAst> const_exp_list;
     int cal();
+    void dump(std::stringstream& out);
+};
+
+class ConstExpListAst : public BaseAst {
+public:
+    std::unique_ptr<BaseAst> const_exp;
+    std::unique_ptr<BaseAst> const_exp_list;
+    int cal() {return 0;}
+    void cal(vector<int>& nums);
 };
 
 class ConstInitValAst : public BaseAst {
 public:
     std::unique_ptr<BaseAst> const_exp;
+    std::unique_ptr<BaseAst> const_init_val_list;
+    //bool flag_initial = false;
     int cal();
+    void dump(std::stringstream& out, string ident, vector<int>& nums, bool flag);
+    void cal(vector<int>& nums, int idx, int& cnt, vector<int>& data);
+    void dump(std::stringstream& out) {}
 };
 
 class InitValAst : public BaseAst {
 public:
     std::unique_ptr<BaseAst> exp;
+    std::unique_ptr<BaseAst> init_val_list;
     void dump(std::stringstream& out);
+    void dump(std::stringstream& out, string ident, vector<int>& num, bool flag);
+    void dump(vector<int>& nums, vector<pair<int, bool>>& data, int idx, int& cnt, std::stringstream& out);
     int cal();
 };
 
@@ -306,5 +327,32 @@ public:
 
 class LValAst : public BaseAst {
 public:
+    std::unique_ptr<BaseAst> exp_list;
     int cal();
+};
+
+class ExpListAst : public BaseAst {
+public:
+    std::unique_ptr<BaseAst> exp;
+    std::unique_ptr<BaseAst> exp_list;
+    int cal() {return 0;}
+    void cal(vector<int>& nums);
+    void dump(vector<pair<int, bool>>& nums, std::stringstream& out);
+    void dump(std::stringstream& out) {}
+};
+
+class InitValListAst : public BaseAst {
+public:
+    std::unique_ptr<BaseAst> init_val;
+    std::unique_ptr<BaseAst> init_val_list;
+    void dump(std::stringstream& out) {}
+    void dump(vector<int>& nums, vector<pair<int, bool>>& data, int idx, int& cnt, std::stringstream& out);
+};
+
+class ConstInitValListAst : public BaseAst {
+public:
+    std::unique_ptr<BaseAst> const_init_val;
+    std::unique_ptr<BaseAst> const_init_val_list;
+    void cal(vector<int>& nums, int idx, int& cnt, vector<int>& data);
+    int cal() {return 0;}
 };
