@@ -62,7 +62,7 @@ int SymbolTable::get(std::string& name) {
     if (gst.isExist_var(name)) {
         return gst.var_table[name].first;
     }
-    //assert(false);
+    assert(false);
     return -1;
 }
 
@@ -80,7 +80,7 @@ bool SymbolTable::isConst(std::string& name) {
     if (gst.isExist_var(name)) {
         return gst.var_table[name].second;
     }
-    //assert(false);
+    assert(false);
     return false;
 }
 
@@ -98,7 +98,7 @@ int SymbolTable::getID(std::string& name) const {
     if (gst.isExist_var(name)) {
         return 0;
     }
-    //assert(false);
+    assert(false);
     return -1;
 }
 
@@ -154,7 +154,7 @@ bool GlobalSymbolTable::isExist_func(string& name) const {
 }
 
 vector<string>& GlobalSymbolTable::getParams(string& name) {
-    //assert(func_table.find(name) != func_table.end());
+    assert(func_table.find(name) != func_table.end());
     return func_table[name].first;
 }
 
