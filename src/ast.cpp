@@ -740,7 +740,7 @@ void ConstDefListAst::dump(std::stringstream& out) {
     }
     if (const_def_list != nullptr) {
         const_def_list->idx = idx;
-        const_def_list->cal();
+        const_def_list->dump(out);
     }
 }
 

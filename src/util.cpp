@@ -381,7 +381,6 @@ void Printer::print_load_array(std::string& ident, vector<pair<int, bool>>& nums
         }
     }
     int len = table.get(ident);
-    std::cout << ident << " " << len << " " << nums.size() << std::endl;
     if (abs(len) != nums.size()) {
         out << "  %" << idx + 1 << " = getelemptr %" << idx << ", 0" << std::endl;
     } else {
