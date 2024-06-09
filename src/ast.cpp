@@ -892,19 +892,19 @@ void ConstInitValAst::cal(vector<int>& nums, int idx, int& cnt, vector<int>& dat
         data.push_back(const_exp->cal());
         cnt++;
     } else {
-        if (const_init_val_list == nullptr) {
-            for (int k = 0; k < nums[idx]; ++k) {
-                data.push_back(0);
-                cnt++;
-            }
-            return;
-        }
         assert(cnt % nums[nums.size() - 1] == 0);
         int i = nums.size() - 2;
         for (; i > idx; i--) {
             if (cnt % nums[i] != 0) {
                 break;
             }
+        }
+        if (const_init_val_list == nullptr) {
+            for (int k = 0; k < nums[i + 1]; ++k) {
+                data.push_back(0);
+                cnt++;
+            }
+            return;
         }
         reinterpret_cast<ConstInitValListAst&>(*const_init_val_list).cal(nums, i + 1, cnt, data, true);
     }
@@ -971,19 +971,19 @@ void InitValAst::dump(vector<int>& nums, vector<pair<int, bool>>& data, int idx,
         }
         cnt++;
     } else {
-        if (init_val_list == nullptr) {
-            for (int k = 0; k < nums[idx]; ++k) {
-                data.push_back(std::make_pair(0, false));
-                cnt++;
-            }
-            return;
-        }
         assert(cnt % nums[nums.size() - 1] == 0);
         int i = nums.size() - 2;
         for (; i > idx; i--) {
             if (cnt % nums[i] != 0) {
                 break;
             }
+        }
+        if (init_val_list == nullptr) {
+            for (int k = 0; k < nums[i + 1]; ++k) {
+                data.push_back(std::make_pair(0, false));
+                cnt++;
+            }
+            return;
         }
         reinterpret_cast<InitValListAst&>(*init_val_list).dump(nums, data, i + 1, cnt, out, true);
     }
