@@ -16,6 +16,7 @@ bool end = false;
 bs_cnt count;
 bool flag_main = false;
 bool flag_type = false;
+bool flag_global_init = false;
  
 void CompUnitAst::dump(std::stringstream& out) {
     printer.print_decl(out);
@@ -871,7 +872,7 @@ void ConstInitValAst::dump(std::stringstream& out, string ident, vector<int>& nu
 }
 
 void ConstInitValListAst::cal(vector<int>& nums, int idx, int& cnt, vector<int>& data, bool flag) {
-    std::cout << "cls:" << idx << " " << cnt << std::endl;
+    //std::cout << "cls:" << idx << " " << cnt << std::endl;
     int cnt_now = cnt;
     reinterpret_cast<ConstInitValAst&>(*const_init_val).cal(nums, abs(idx), cnt, data);
     if (const_init_val_list != nullptr) {
@@ -883,11 +884,11 @@ void ConstInitValListAst::cal(vector<int>& nums, int idx, int& cnt, vector<int>&
         }
     cnt = cnt_now + nums[idx];
     }
-    std::cout << "cle:" << idx << " " << cnt << std::endl;
+    //std::cout << "cle:" << idx << " " << cnt << std::endl;
 }
 
 void ConstInitValAst::cal(vector<int>& nums, int idx, int& cnt, vector<int>& data) {
-    std::cout << "cs:" << idx << " " << cnt << std::endl;
+    //std::cout << "cs:" << idx << " " << cnt << std::endl;
     if (const_exp != nullptr) {
         data.push_back(const_exp->cal());
         cnt++;
@@ -908,7 +909,7 @@ void ConstInitValAst::cal(vector<int>& nums, int idx, int& cnt, vector<int>& dat
         }
         reinterpret_cast<ConstInitValListAst&>(*const_init_val_list).cal(nums, i + 1, cnt, data, true);
     }
-    std::cout << "ce:" << idx << " " << cnt << std::endl;
+    //std::cout << "ce:" << idx << " " << cnt << std::endl;
 }
 
 void InitValAst::dump(std::stringstream& out) {
@@ -936,6 +937,7 @@ void InitValAst::dump(std::stringstream& out, string ident, vector<int>& nums, b
     }
     vector<pair<int, bool>> data;
     int cnt = 0;
+    flag_global_init = !flag;
     reinterpret_cast<InitValListAst&>(*init_val_list).dump(widths, data, 0, cnt, out, true);
     assert(cnt == widths[0]);
     idx = BaseAst::id;
@@ -963,11 +965,15 @@ void InitValListAst::dump(vector<int>& nums, vector<pair<int, bool>>& data, int 
 
 void InitValAst::dump(vector<int>& nums, vector<pair<int, bool>>& data, int idx, int& cnt, std::stringstream& out) {
     if (exp != nullptr) {
-        exp->dump(out);
-        if (exp->idx == -1) {
-            data.push_back(std::make_pair(exp->num, false));
+        if (flag_global_init) {
+            data.push_back(std::make_pair(exp->cal(), false));
         } else {
-            data.push_back(std::make_pair(exp->idx, true));
+            exp->dump(out);
+            if (exp->idx == -1) {
+                data.push_back(std::make_pair(exp->num, false));
+            } else {
+                data.push_back(std::make_pair(exp->idx, true));
+            }
         }
         cnt++;
     } else {
