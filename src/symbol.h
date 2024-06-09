@@ -23,7 +23,7 @@ public:
 class SymbolTable {
 public:
     bool insert(string& name, int num);
-    bool insert(string& name, bool is_ptr);
+    bool insert(string& name, bool is_ptr, int len);
     bool isExist(string& name) const;
     int get(string& name);
     bool isConst(string& name);

@@ -18,13 +18,13 @@ bool SymbolTable::insert(std::string& name, int num) {
     return false;
 }
 
-bool SymbolTable::insert(std::string& name, bool is_ptr) {
+bool SymbolTable::insert(std::string& name, bool is_ptr, int len) {
     auto& tab = table.first;
     if (tab.find(name) == tab.end()) {
         if (is_ptr) {
-            tab[name] = std::make_pair(1, false);
+            tab[name] = std::make_pair(len, false);
         } else {
-            tab[name] = std::make_pair(0, false);
+            tab[name] = std::make_pair(-len, false);
         }
         return true;
     }
@@ -162,7 +162,11 @@ bool GlobalSymbolTable::insert_var(string& name, int num, bool is_const) {
     if (var_table.find(name) != var_table.end()) {
         return false;
     }
-    var_table[name] = std::make_pair(num, is_const);
+    if (is_const) {
+        var_table[name] = std::make_pair(num, true);
+    } else {
+        var_table[name] = std::make_pair(-num, false);
+    }
     return true;
 }
 

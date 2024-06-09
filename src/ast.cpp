@@ -88,17 +88,17 @@ void FuncFparamsAst::dump(std::stringstream& out, vector<pair<string, string>>& 
 void FuncFparamAst::dump(std::stringstream& out) {
     if (exp_list == nullptr) {
         if (type_flag == 1) {
-            table.insert(ident, true);
+            table.insert(ident, true, 1);
             printer.print_funcfparam(ident, out, table, true);
             type = "*" + type;
         } else {
-            table.insert(ident, false);
+            table.insert(ident, false, 0);
             printer.print_funcfparam(ident, out, table, false);
         }
     } else {
-        table.insert(ident, true);
         vector<int> nums;
         reinterpret_cast<ExpListAst&>(*exp_list).cal(nums);
+        table.insert(ident, true, nums.size() + 1);
         printer.print_funcfparam(ident, nums, out, table); 
         std::stringstream ss;
         printer.recursive_print(nums, 0, ss);
@@ -289,13 +289,14 @@ void OtherStmtAst::dump(std::stringstream& out) {
                 vector<pair<int, bool>> nums;
                 auto& exp_list = reinterpret_cast<LValAst&>(*lval).exp_list;
                 reinterpret_cast<ExpListAst&>(*exp_list).dump(nums, out);
-                bool is_ptr = table.get(lval->ident);
+                int num = table.get(lval->ident);
+                bool is_ptr = (num > 0);
                 if (exp->idx == -1) {
                     printer.print_store_array_const(lval->ident, nums, BaseAst::id, exp->num, out, table, is_ptr);
                     BaseAst::id += nums.size() + 1;
                 } else {
-                    printer.print_store_array_var(lval->ident, nums, BaseAst::id - 1, exp->idx, out, table, is_ptr);
-                    BaseAst::id += nums.size() + 1;
+                    printer.print_store_array_var(lval->ident, nums, BaseAst::id, exp->idx, out, table, is_ptr);
+                    BaseAst::id += nums.size() + 2;
                 }
             }
             break;
@@ -388,12 +389,12 @@ void PrimaryExpAst::dump(std::stringstream& out) {
             if (reinterpret_cast<LValAst&>(*lval).exp_list == nullptr) {
                 idx = BaseAst::id;
                 printer.print_load(idx, lval->ident, out, table);
-                BaseAst::id += 2; // ???
+                BaseAst::id++;
             } else {
                 vector<pair<int, bool>> nums;
                 auto& exp_list = reinterpret_cast<LValAst&>(*lval).exp_list;
                 reinterpret_cast<ExpListAst&>(*exp_list).dump(nums, out);
-                bool is_ptr = table.get(lval->ident);
+                bool is_ptr = (table.get(lval->ident) > 0);
                 printer.print_load_array(lval->ident, nums, BaseAst::id, out, table, is_ptr);
                 if (is_ptr) {
                     BaseAst::id += nums.size() + 2;
@@ -441,7 +442,11 @@ void UnaryExpAst::dump(std::stringstream& out) {
             reinterpret_cast<FuncRparamsAst&>(*func_rparams).dump(out, args);
         }
         /*for (int i = 0; i < args.size(); i++) {
-            assert(args[i].first == params[i]);
+            if (args[i].first != params[i]) {
+                out << "  %" << BaseAst::id << "  = getelemptr %" << args[i].second.second - 1 << ", 0" << std::endl;
+                args[i].second.second = BaseAst::id;
+                BaseAst::id++;
+            }
         }*/
         if (flag) {
             out << "  %" << BaseAst::id << " = call @" << ident << "(";
@@ -765,11 +770,11 @@ void ConstDefAst::dump(std::stringstream& out) {
     reinterpret_cast<ConstExpListAst&>(*const_exp_list).cal(nums);
     assert(const_exp_list != nullptr);
     if (idx != -1) {
-        table.insert(ident, false);
+        table.insert(ident, false, nums.size());
         printer.print_alloc_arr(ident, nums, out, table);
         reinterpret_cast<ConstInitValAst&>(*const_init_val).dump(out, ident, nums, true);
     } else {
-        table.gst.insert_var(ident, 0, false);
+        table.gst.insert_var(ident, nums.size(), false);
         printer.print_global_alloc_arr(ident, nums, out, table.gst);
         reinterpret_cast<ConstInitValAst&>(*const_init_val).dump(out, ident, nums, false);
     }
@@ -777,8 +782,8 @@ void ConstDefAst::dump(std::stringstream& out) {
 
 void VarDefAst::dump(std::stringstream& out) {
     if (idx != -1) {
-        table.insert(ident, false);
         if (const_exp_list == nullptr) {
+            table.insert(ident, false, 0);
             printer.print_alloc(ident, out, table);
             if (initval != nullptr) {
                 initval->dump(out);
@@ -791,6 +796,7 @@ void VarDefAst::dump(std::stringstream& out) {
         } else {
             vector<int> nums;
             reinterpret_cast<ConstExpListAst&>(*const_exp_list).cal(nums);
+            table.insert(ident, false, nums.size());
             printer.print_alloc_arr(ident, nums, out, table);
             if (initval != nullptr) {
                 reinterpret_cast<InitValAst&>(*initval).dump(out, ident, nums, true);
@@ -799,8 +805,8 @@ void VarDefAst::dump(std::stringstream& out) {
             }
         }
     } else {
-        table.gst.insert_var(ident, 0, false);
         if (const_exp_list == nullptr) {
+            table.gst.insert_var(ident, 0, false);
             if (initval != nullptr) {
                 printer.print_global_alloc(ident, initval->cal(), out, table.gst);
             } else {
@@ -809,6 +815,7 @@ void VarDefAst::dump(std::stringstream& out) {
         } else {
             vector<int> nums;
             reinterpret_cast<ConstExpListAst&>(*const_exp_list).cal(nums);
+            table.gst.insert_var(ident, nums.size(), false);
             printer.print_global_alloc_arr(ident, nums, out, table.gst);
             if (initval != nullptr) {
                 reinterpret_cast<InitValAst&>(*initval).dump(out, ident, nums, false);

@@ -72,7 +72,13 @@ void Printer::print_unary(int idx, std::string& op, std::unique_ptr<BaseAst>& rh
 
 void Printer::print_load(int idx, std::string& ident, std::stringstream& out, SymbolTable& table) {
     int id = table.getID(ident);
-    out << "  %" << idx << " = load @" << (ident + '_' + std::to_string(id)) << std::endl;
+    int len = table.get(ident);
+    int flag = table.isConst(ident);
+    if (len >= 0 || flag) {
+        out << "  %" << idx << " = load @" << (ident + '_' + std::to_string(id)) << std::endl;
+    } else {
+        out << "  %" << idx << " = getelemptr @" << (ident + '_' + std::to_string(id))  << ", 0" << std::endl;
+    }
 }
 
 void Printer::print_store(bool flag, int idx, std::string& ident, std::stringstream& out, SymbolTable& table) {
@@ -374,7 +380,13 @@ void Printer::print_load_array(std::string& ident, vector<pair<int, bool>>& nums
             out << nums[i].first << std::endl;
         }
     }
-    out << "  %" << idx + 1 << " = load %" << idx << std::endl;
+    int len = table.get(ident);
+    std::cout << ident << " " << len << " " << nums.size() << std::endl;
+    if (abs(len) != nums.size()) {
+        out << "  %" << idx + 1 << " = getelemptr %" << idx << ", 0" << std::endl;
+    } else {
+        out << "  %" << idx + 1 << " = load %" << idx << std::endl;
+    }
 }
 
 void Printer::print_funcfparam(std::string& ident, std::stringstream& out, SymbolTable& table, bool flag) {
