@@ -346,7 +346,7 @@ public:
     std::unique_ptr<BaseAst> init_val;
     std::unique_ptr<BaseAst> init_val_list;
     void dump(std::stringstream& out) {}
-    void dump(vector<int>& nums, vector<pair<int, bool>>& data, int idx, int& cnt, std::stringstream& out);
+    void dump(vector<int>& nums, vector<pair<int, bool>>& data, int idx, int& cnt, std::stringstream& out, bool flag);
 };
 
 class ConstInitValListAst : public BaseAst {

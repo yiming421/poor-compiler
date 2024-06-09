@@ -871,7 +871,7 @@ void ConstInitValAst::dump(std::stringstream& out, string ident, vector<int>& nu
 }
 
 void ConstInitValListAst::cal(vector<int>& nums, int idx, int& cnt, vector<int>& data, bool flag) {
-    //std::cout << "cls:" << idx << " " << cnt << std::endl;
+    std::cout << "cls:" << idx << " " << cnt << std::endl;
     int cnt_now = cnt;
     reinterpret_cast<ConstInitValAst&>(*const_init_val).cal(nums, abs(idx), cnt, data);
     if (const_init_val_list != nullptr) {
@@ -883,11 +883,11 @@ void ConstInitValListAst::cal(vector<int>& nums, int idx, int& cnt, vector<int>&
         }
     cnt = cnt_now + nums[idx];
     }
-    //std::cout << "cle:" << idx << " " << cnt << std::endl;
+    std::cout << "cle:" << idx << " " << cnt << std::endl;
 }
 
 void ConstInitValAst::cal(vector<int>& nums, int idx, int& cnt, vector<int>& data) {
-    //std::cout << "cs:" << idx << " " << cnt << std::endl;
+    std::cout << "cs:" << idx << " " << cnt << std::endl;
     if (const_exp != nullptr) {
         data.push_back(const_exp->cal());
         cnt++;
@@ -899,20 +899,16 @@ void ConstInitValAst::cal(vector<int>& nums, int idx, int& cnt, vector<int>& dat
             }
             return;
         }
-        if (idx == nums.size()) {
-            reinterpret_cast<ConstInitValListAst&>(*const_init_val_list).cal(nums, idx, cnt, data, true);
-        } else {
-            assert(cnt % nums[nums.size() - 1] == 0);
-            int i = nums.size() - 2;
-            for (; i > idx; i--) {
-                if (cnt % nums[i] != 0) {
-                    break;
-                }
+        assert(cnt % nums[nums.size() - 1] == 0);
+        int i = nums.size() - 2;
+        for (; i > idx; i--) {
+            if (cnt % nums[i] != 0) {
+                break;
             }
-            reinterpret_cast<ConstInitValListAst&>(*const_init_val_list).cal(nums, i + 1, cnt, data, true);
         }
+        reinterpret_cast<ConstInitValListAst&>(*const_init_val_list).cal(nums, i + 1, cnt, data, true);
     }
-    //std::cout << "ce:" << idx << " " << cnt << std::endl;
+    std::cout << "ce:" << idx << " " << cnt << std::endl;
 }
 
 void InitValAst::dump(std::stringstream& out) {
@@ -940,7 +936,7 @@ void InitValAst::dump(std::stringstream& out, string ident, vector<int>& nums, b
     }
     vector<pair<int, bool>> data;
     int cnt = 0;
-    reinterpret_cast<InitValListAst&>(*init_val_list).dump(widths, data, 0, cnt, out);
+    reinterpret_cast<InitValListAst&>(*init_val_list).dump(widths, data, 0, cnt, out, true);
     assert(cnt == widths[0]);
     idx = BaseAst::id;
     if (flag) {
@@ -950,17 +946,19 @@ void InitValAst::dump(std::stringstream& out, string ident, vector<int>& nums, b
     }
 }
 
-void InitValListAst::dump(vector<int>& nums, vector<pair<int, bool>>& data, int idx, int& cnt, std::stringstream& out) {
+void InitValListAst::dump(vector<int>& nums, vector<pair<int, bool>>& data, int idx, int& cnt, std::stringstream& out, bool flag) {
     int cnt_now = cnt;
     reinterpret_cast<InitValAst&>(*init_val).dump(nums, data, idx, cnt, out);
     if (init_val_list != nullptr) {
-        reinterpret_cast<InitValListAst&>(*init_val_list).dump(nums, data, idx, cnt, out);
+        reinterpret_cast<InitValListAst&>(*init_val_list).dump(nums, data, idx, cnt, out, false);
     }
     //std::cout << idx << " " << cnt << " " << cnt_now << std::endl;
-    for (int i = cnt - cnt_now; i < nums[idx]; i++) {
-        data.push_back(std::make_pair(0, false));
+    if (flag) {
+        for (int i = cnt - cnt_now; i < nums[idx]; i++) {
+            data.push_back(std::make_pair(0, false));
+        }
+        cnt = cnt_now + nums[idx];
     }
-    cnt = cnt_now + nums[idx];
 }
 
 void InitValAst::dump(vector<int>& nums, vector<pair<int, bool>>& data, int idx, int& cnt, std::stringstream& out) {
@@ -980,18 +978,14 @@ void InitValAst::dump(vector<int>& nums, vector<pair<int, bool>>& data, int idx,
             }
             return;
         }
-        if (idx == nums.size()) {
-            reinterpret_cast<InitValListAst&>(*init_val_list).dump(nums, data, idx, cnt, out);
-        } else {
-            assert(cnt % nums[nums.size() - 1] == 0);
-            int i = nums.size() - 2;
-            for (; i >= idx; i--) {
-                if (cnt % nums[i] != 0) {
-                    break;
-                }
+        assert(cnt % nums[nums.size() - 1] == 0);
+        int i = nums.size() - 2;
+        for (; i > idx; i--) {
+            if (cnt % nums[i] != 0) {
+                break;
             }
-            reinterpret_cast<InitValListAst&>(*init_val_list).dump(nums, data, i + 1, cnt, out);
         }
+        reinterpret_cast<InitValListAst&>(*init_val_list).dump(nums, data, i + 1, cnt, out, true);
     }
 }
 
