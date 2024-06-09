@@ -861,7 +861,7 @@ void ConstInitValAst::dump(std::stringstream& out, string ident, vector<int>& nu
         widths[i] = widths[i + 1] * nums[i];
     }
     int cnt = 0;
-    reinterpret_cast<ConstInitValListAst&>(*const_init_val_list).cal(widths, 0, cnt, data);
+    reinterpret_cast<ConstInitValListAst&>(*const_init_val_list).cal(widths, 0, cnt, data, true);
     assert(cnt == widths[0]);
     if (flag) {
         printer.print_init_arr_const(ident, data, nums, BaseAst::id, out, table);
@@ -870,19 +870,24 @@ void ConstInitValAst::dump(std::stringstream& out, string ident, vector<int>& nu
     }
 }
 
-void ConstInitValListAst::cal(vector<int>& nums, int idx, int& cnt, vector<int>& data) {
+void ConstInitValListAst::cal(vector<int>& nums, int idx, int& cnt, vector<int>& data, bool flag) {
+    //std::cout << "cls:" << idx << " " << cnt << std::endl;
     int cnt_now = cnt;
-    reinterpret_cast<ConstInitValAst&>(*const_init_val).cal(nums, idx, cnt, data);
+    reinterpret_cast<ConstInitValAst&>(*const_init_val).cal(nums, abs(idx), cnt, data);
     if (const_init_val_list != nullptr) {
-        reinterpret_cast<ConstInitValListAst&>(*const_init_val_list).cal(nums, idx, cnt, data);
+        reinterpret_cast<ConstInitValListAst&>(*const_init_val_list).cal(nums, idx, cnt, data, false);
     }
-    for (int i = cnt - cnt_now; i < nums[idx]; i++) {
-        data.push_back(0);
-    }
+    if (flag) {
+        for (int i = cnt - cnt_now; i < nums[idx]; i++) {
+            data.push_back(0);
+        }
     cnt = cnt_now + nums[idx];
+    }
+    //std::cout << "cle:" << idx << " " << cnt << std::endl;
 }
 
 void ConstInitValAst::cal(vector<int>& nums, int idx, int& cnt, vector<int>& data) {
+    //std::cout << "cs:" << idx << " " << cnt << std::endl;
     if (const_exp != nullptr) {
         data.push_back(const_exp->cal());
         cnt++;
@@ -895,18 +900,19 @@ void ConstInitValAst::cal(vector<int>& nums, int idx, int& cnt, vector<int>& dat
             return;
         }
         if (idx == nums.size()) {
-            reinterpret_cast<ConstInitValListAst&>(*const_init_val_list).cal(nums, idx, cnt, data);
+            reinterpret_cast<ConstInitValListAst&>(*const_init_val_list).cal(nums, idx, cnt, data, true);
         } else {
             assert(cnt % nums[nums.size() - 1] == 0);
             int i = nums.size() - 2;
-            for (; i >= idx; i--) {
+            for (; i > idx; i--) {
                 if (cnt % nums[i] != 0) {
                     break;
                 }
             }
-            reinterpret_cast<ConstInitValListAst&>(*const_init_val_list).cal(nums, i, cnt, data);
+            reinterpret_cast<ConstInitValListAst&>(*const_init_val_list).cal(nums, i + 1, cnt, data, true);
         }
     }
+    //std::cout << "ce:" << idx << " " << cnt << std::endl;
 }
 
 void InitValAst::dump(std::stringstream& out) {

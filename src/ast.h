@@ -353,6 +353,6 @@ class ConstInitValListAst : public BaseAst {
 public:
     std::unique_ptr<BaseAst> const_init_val;
     std::unique_ptr<BaseAst> const_init_val_list;
-    void cal(vector<int>& nums, int idx, int& cnt, vector<int>& data);
+    void cal(vector<int>& nums, int idx, int& cnt, vector<int>& data, bool flag);
     int cal() {return 0;}
 };
