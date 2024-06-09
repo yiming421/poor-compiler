@@ -710,6 +710,9 @@ int LOrExpAst::cal() {
 }
 
 void DeclAst::dump(std::stringstream& out) {
+    if (end) {
+        return;
+    }
     if (const_decl != nullptr) {
         const_decl->idx = idx;
         const_decl->dump(out);
