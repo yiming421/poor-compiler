@@ -417,6 +417,20 @@ void RiscvPrinter::print_sw(string dst, int num, ofstream& out) {
     out << "  sw " << dst << ", 0(t2)" << endl;
 }
 
+void RiscvPrinter::print_sw_ptr(string dst, int num, ofstream& out) {
+    out << "  li t2, " << num << endl;
+    out << "  add t2, sp, t2" << endl;
+    out << "  lw t2, 0(t2)" << endl;
+    out << "  sw " << dst << ", 0(t2)" << endl;
+}
+
+void RiscvPrinter::print_load_ptr(string dst, int num, ofstream& out) {
+    out << "  li t2, " << num << endl;
+    out << "  add t2, sp, t2" << endl;
+    out << "  lw " << "t2" << ", 0(t2)" << endl;
+    out << "  lw " << dst << ", 0(t2)" << endl;
+}
+
 void RiscvPrinter::print_jump(string label, ofstream& out) {
     out << "  j " << label << endl;
 }

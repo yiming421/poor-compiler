@@ -32,8 +32,9 @@ public:
                     var2bias[value] = bias;
                     bias += 4;
                 } else if (value->kind.tag == KOOPA_RVT_ALLOC) {
+                    size_t size = getsize(value->ty->data.pointer.base);
                     var2bias[value] = bias;
-                    bias += 4;
+                    bias += size;
                 } else if (value->kind.tag == KOOPA_RVT_LOAD) {
                     var2bias[value] = bias;
                     bias += 4;
@@ -44,6 +45,12 @@ public:
                     if (value->kind.data.call.args.len > 8) {
                         params_num = std::max(params_num, static_cast<int>(value->kind.data.call.args.len));
                     }
+                } else if (value->kind.tag == KOOPA_RVT_GET_ELEM_PTR) {
+                    var2bias[value] = bias;
+                    bias += 4;
+                } else if (value->kind.tag == KOOPA_RVT_GET_PTR) {
+                    var2bias[value] = bias;
+                    bias += 4;
                 }
             }
         }
@@ -71,7 +78,7 @@ public:
         params_num = 0;
         return tmp;
     }
-    int getnum() {
+    int getnum() {      
         return bias;
     }
 
@@ -87,6 +94,18 @@ const vector<string> op_name = {
     "", "", "sgt", "slt", "", "", "add", "sub", "mul", "div", "rem", 
     "and", "or", "xor", "sll", "srl", "sra"
 };
+
+size_t getsize(const koopa_raw_type_t& type) {
+    if (type->tag == KOOPA_RTT_INT32) {
+        return 4;
+    } else if (type->tag == KOOPA_RTT_POINTER) {
+        return 4;
+    } else if (type->tag == KOOPA_RTT_ARRAY) {
+        return getsize(type->data.array.base) * type->data.array.len;
+    } else {
+        return 0;
+    }
+}
 
 void visit_koopa(const koopa_raw_program_t& raw, ofstream& fout) {
     for (size_t i = 0; i < raw.values.len; ++i) {
@@ -163,9 +182,58 @@ void visit_koopa(const koopa_raw_value_t& value, ofstream& fout) {
         case KOOPA_RVT_GLOBAL_ALLOC:
             visit_global(value, fout);
             break;
+        case KOOPA_RVT_GET_ELEM_PTR:
+            visit_koopa(value->kind.data.get_elem_ptr, fout);
+            riscv_printer.print_sw("t0", st.getbias(value), fout);
+            break;
+        case KOOPA_RVT_GET_PTR:
+            visit_koopa(value->kind.data.get_ptr, fout);
+            riscv_printer.print_sw("t0", st.getbias(value), fout);
+            break;
         default:
             assert(false);
     }
+}
+
+void visit_koopa(const koopa_raw_get_elem_ptr_t& gep, ofstream& fout) {
+    if (gep.src->kind.tag == KOOPA_RVT_GLOBAL_ALLOC) {
+        riscv_printer.print("  la t0, " + string(gep.src->name + 1), fout);
+    } else if (gep.src->kind.tag == KOOPA_RVT_ALLOC) {
+        riscv_printer.print("  li t0, " + to_string(st.getbias(gep.src)), fout);
+        riscv_printer.print("  add t0, sp, t0", fout);
+    } else {
+        riscv_printer.print_load("t0", st.getbias(gep.src), fout);
+    }
+    if (gep.index->kind.tag == KOOPA_RVT_INTEGER) {
+        riscv_printer.print_load_const("t1", gep.index->kind.data.integer.value, fout);
+    } else {
+        riscv_printer.print_load("t1", st.getbias(gep.index), fout);
+    }
+    size_t size = getsize(gep.src->ty->data.pointer.base->data.array.base);
+    riscv_printer.print("  li t2, " + to_string(size), fout);
+    riscv_printer.print("  mul t1, t1, t2", fout);
+    riscv_printer.print("  add t0, t0, t1", fout);
+}
+
+void visit_koopa(const koopa_raw_get_ptr_t& getptr, ofstream& fout) {
+    if (getptr.src->kind.tag == KOOPA_RVT_GLOBAL_ALLOC) {
+        riscv_printer.print("  la t0, " + string(getptr.src->name + 1), fout);
+    } else if (getptr.src->kind.tag == KOOPA_RVT_ALLOC) {
+        riscv_printer.print("  li t0, " + to_string(st.getbias(getptr.src)), fout);
+        riscv_printer.print("  add t0, sp, t0", fout);
+    } else {
+        riscv_printer.print_load("t0", st.getbias(getptr.src), fout);
+    }
+    if (getptr.index->kind.tag == KOOPA_RVT_INTEGER) {
+        riscv_printer.print_load_const("t1", getptr.index->kind.data.integer.value, fout);
+    } else {
+        riscv_printer.print_load("t1", st.getbias(getptr.index), fout);
+    }
+    size_t size = getsize(getptr.src->ty->data.pointer.base);
+    riscv_printer.print("  li t2, " + to_string(size), fout);
+    riscv_printer.print("  mul t1, t1, t2", fout);
+    riscv_printer.print("  add t0, t0, t1", fout);
+
 }
 
 void visit_global(const koopa_raw_value_t& value, ofstream& fout) {
@@ -173,11 +241,30 @@ void visit_global(const koopa_raw_value_t& value, ofstream& fout) {
     riscv_printer.print("  .data", fout);
     riscv_printer.print("  .globl " + name, fout);
     riscv_printer.print(name + ":", fout);
-    auto init = value->kind.data.global_alloc.init;
-    if (init->kind.tag == KOOPA_RVT_ZERO_INIT) {
-        riscv_printer.print("  .zero 4", fout);
+    if (value->ty->data.pointer.base->tag == KOOPA_RTT_INT32) {
+        auto init = value->kind.data.global_alloc.init;
+        if (init->kind.tag == KOOPA_RVT_ZERO_INIT) {
+            riscv_printer.print("  .zero 4", fout);
+        } else {
+            riscv_printer.print("  .word " + to_string(init->kind.data.integer.value), fout);
+        }
     } else {
+        auto init = value->kind.data.global_alloc.init;
+        if (init->kind.tag == KOOPA_RVT_ZERO_INIT) {
+            riscv_printer.print("  .zero " + to_string(getsize(value->ty->data.pointer.base)), fout);
+        } else {
+            print_init(init, fout);
+        }
+    }
+}
+
+void print_init(const koopa_raw_value_t& init, ofstream& fout) {
+    if (init->kind.tag == KOOPA_RVT_INTEGER) {
         riscv_printer.print("  .word " + to_string(init->kind.data.integer.value), fout);
+    } else {
+        for (size_t i = 0; i < init->kind.data.aggregate.elems.len; ++i) {
+            print_init(reinterpret_cast<koopa_raw_value_t>(init->kind.data.aggregate.elems.buffer[i]), fout);
+        }
     }
 }
 
@@ -220,8 +307,10 @@ void visit_koopa(const koopa_raw_branch_t& branch, ofstream& fout) {
 void visit_koopa(const koopa_raw_load_t& load, ofstream& fout) {
     if (load.src->kind.tag == KOOPA_RVT_GLOBAL_ALLOC) {
         riscv_printer.print_load_global("t0", string(load.src->name + 1), fout);
-    } else {
+    } else if (load.src->kind.tag == KOOPA_RVT_ALLOC) {
         riscv_printer.print_load("t0", st.getbias(load.src), fout);
+    } else {
+        riscv_printer.print_load_ptr("t0", st.getbias(load.src), fout);
     }
 }
 
@@ -231,15 +320,19 @@ void visit_koopa(const koopa_raw_store_t& store, ofstream& fout) {
         if (idx < 8) {
             if (store.dest->kind.tag == KOOPA_RVT_GLOBAL_ALLOC) {
                 riscv_printer.print_sw_global("a" + to_string(idx), string(store.dest->name + 1), fout);
-            } else {
+            } else if (store.dest->kind.tag == KOOPA_RVT_ALLOC) {
                 riscv_printer.print_sw("a" + to_string(idx), st.getbias(store.dest), fout);
+            } else {
+                riscv_printer.print_sw_ptr("a" + to_string(idx), st.getbias(store.dest), fout);
             }
         } else {
             riscv_printer.print_load("t0", 4 * (idx - 8) + st.getnum(), fout);
             if (store.dest->kind.tag == KOOPA_RVT_GLOBAL_ALLOC) {
                 riscv_printer.print_sw_global("t0", string(store.dest->name + 1), fout);
-            } else {
+            } else if (store.dest->kind.tag == KOOPA_RVT_ALLOC) {
                 riscv_printer.print_sw("t0", st.getbias(store.dest), fout);
+            } else {
+                riscv_printer.print_sw_ptr("t0", st.getbias(store.dest), fout);
             }
         }
     } else {
@@ -250,8 +343,10 @@ void visit_koopa(const koopa_raw_store_t& store, ofstream& fout) {
         }
         if (store.dest->kind.tag == KOOPA_RVT_GLOBAL_ALLOC) {
             riscv_printer.print_sw_global("t0", string(store.dest->name + 1), fout);
-        } else {
+        } else if (store.dest->kind.tag == KOOPA_RVT_ALLOC) {
             riscv_printer.print_sw("t0", st.getbias(store.dest), fout);
+        } else {
+            riscv_printer.print_sw_ptr("t0", st.getbias(store.dest), fout);
         }
     } 
 }

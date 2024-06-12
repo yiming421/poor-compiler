@@ -17,4 +17,8 @@ void visit_koopa(const koopa_raw_store_t& store, ofstream& fout);
 void visit_koopa(const koopa_raw_jump_t& jump, ofstream& fout);
 void visit_koopa(const koopa_raw_branch_t& branch, ofstream& fout);
 void visit_koopa(const koopa_raw_call_t& alloc, ofstream& fout);
+void visit_koopa(const koopa_raw_get_elem_ptr_t& gep, ofstream& fout);
+void visit_koopa(const koopa_raw_get_ptr_t& getptr, ofstream& fout);
 void visit_global(const koopa_raw_value_t& alloc, ofstream& fout);
+void print_init(const koopa_raw_value_t& init, ofstream& fout);
+size_t getsize(const koopa_raw_type_t& type);

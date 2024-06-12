@@ -70,4 +70,6 @@ public:
     void print_ra(string op, int num, ofstream& out);
     void print_load_global(string dst, string ident, ofstream& out);
     void print_sw_global(string src, string ident, ofstream& out);
+    void print_sw_ptr(string dst, int num, ofstream& out);
+    void print_load_ptr(string dst, int num, ofstream& out);
 };
