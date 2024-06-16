@@ -18,11 +18,7 @@ class stack {
 public:
     stack() {}
 
-    int precompute(const koopa_raw_function_t& func) {
-        for (size_t i = 0; i < func->params.len; ++i) {
-            koopa_raw_value_t value = reinterpret_cast<koopa_raw_value_t>(func->params.buffer[i]);
-            var2bias[value] = bias;
-        }
+    int precompute(const koopa_raw_function_t& func) { //precompute the bias of each variable
         for (size_t i = 0; i < func->bbs.len; ++i) {
             assert(func->bbs.kind == KOOPA_RSIK_BASIC_BLOCK);
             koopa_raw_basic_block_t bb = reinterpret_cast<koopa_raw_basic_block_t>(func->bbs.buffer[i]);
@@ -32,7 +28,7 @@ public:
                     var2bias[value] = bias;
                     bias += 4;
                 } else if (value->kind.tag == KOOPA_RVT_ALLOC) {
-                    size_t size = getsize(value->ty->data.pointer.base);
+                    size_t size = getsize(value->ty->data.pointer.base); // get the size of the variable
                     var2bias[value] = bias;
                     bias += size;
                 } else if (value->kind.tag == KOOPA_RVT_LOAD) {
@@ -42,7 +38,8 @@ public:
                     var2bias[value] = bias;
                     bias += 4;
                     flag_ra = true;
-                    if (value->kind.data.call.args.len > 8) {
+                    if (value->kind.data.call.args.len > 8) { // if the number of parameters is greater than 8
+                    // then the parameters are stored in the stack
                         params_num = std::max(params_num, static_cast<int>(value->kind.data.call.args.len));
                     }
                 } else if (value->kind.tag == KOOPA_RVT_GET_ELEM_PTR) {
@@ -56,11 +53,11 @@ public:
         }
         if (flag_ra) {
             bias += 4;
-        }
+        } // if the function has a return value, then the return value is stored in the stack
         if (params_num > 8) {
             bias += 4 * (params_num - 8);
             for (auto& pair: var2bias) {
-                var2bias[pair.first] += 4 * (params_num - 8);
+                var2bias[pair.first] += 4 * (params_num - 8); // update the bias of the parameters
             }
         }
         bias = ceil(static_cast<double>(bias) / 16) * 16;
@@ -124,12 +121,12 @@ void visit_koopa(const koopa_raw_function_t& func, ofstream& fout) {
     riscv_printer.print("  .text", fout);
     riscv_printer.print("  .globl " + name, fout);
     riscv_printer.print(name + ":", fout);
-    int num = st.precompute(func);
+    int num = st.precompute(func); // precompute the bias of each variable
     if (num != 0) {
-        riscv_printer.print_add(-num, fout);
+        riscv_printer.print_add(-num, fout); // allocate space for the stack
     }
     if (flag_ra) {
-        riscv_printer.print_ra("sw", num - 4, fout);
+        riscv_printer.print_ra("sw", num - 4, fout); // store the return address
     }
     for (size_t i = 0; i < func->bbs.len; ++i) {
         visit_koopa(reinterpret_cast<koopa_raw_basic_block_t>(func->bbs.buffer[i]), fout);
@@ -156,13 +153,13 @@ void visit_koopa(const koopa_raw_value_t& value, ofstream& fout) {
             break;
         case KOOPA_RVT_BINARY:
             visit_koopa(value->kind.data.binary, fout);
-            riscv_printer.print_sw("t0", st.getbias(value), fout);
+            riscv_printer.print_sw("t0", st.getbias(value), fout); // store the result of the binary operation
             break;
         case KOOPA_RVT_ALLOC:
             break;
         case KOOPA_RVT_LOAD:
             visit_koopa(value->kind.data.load, fout);
-            riscv_printer.print_sw("t0", st.getbias(value), fout);
+            riscv_printer.print_sw("t0", st.getbias(value), fout); // store the result of the load operation
             break;
         case KOOPA_RVT_STORE:
             visit_koopa(value->kind.data.store, fout);
@@ -176,7 +173,7 @@ void visit_koopa(const koopa_raw_value_t& value, ofstream& fout) {
         case KOOPA_RVT_CALL:
             visit_koopa(value->kind.data.call, fout);
             if (value->kind.data.call.callee->ty->data.function.ret->tag == KOOPA_RTT_INT32) {
-                riscv_printer.print_sw("a0", st.getbias(value), fout);
+                riscv_printer.print_sw("a0", st.getbias(value), fout); // store the return value
             }
             break;
         case KOOPA_RVT_GLOBAL_ALLOC:
@@ -184,11 +181,11 @@ void visit_koopa(const koopa_raw_value_t& value, ofstream& fout) {
             break;
         case KOOPA_RVT_GET_ELEM_PTR:
             visit_koopa(value->kind.data.get_elem_ptr, fout);
-            riscv_printer.print_sw("t0", st.getbias(value), fout);
+            riscv_printer.print_sw("t0", st.getbias(value), fout); // store the result of the get element pointer operation
             break;
         case KOOPA_RVT_GET_PTR:
             visit_koopa(value->kind.data.get_ptr, fout);
-            riscv_printer.print_sw("t0", st.getbias(value), fout);
+            riscv_printer.print_sw("t0", st.getbias(value), fout); // store the result of the get pointer operation
             break;
         default:
             assert(false);
@@ -203,16 +200,16 @@ void visit_koopa(const koopa_raw_get_elem_ptr_t& gep, ofstream& fout) {
         riscv_printer.print("  add t0, sp, t0", fout);
     } else {
         riscv_printer.print_load("t0", st.getbias(gep.src), fout);
-    }
+    } // load the address of the source variable
     if (gep.index->kind.tag == KOOPA_RVT_INTEGER) {
         riscv_printer.print_load_const("t1", gep.index->kind.data.integer.value, fout);
     } else {
         riscv_printer.print_load("t1", st.getbias(gep.index), fout);
-    }
+    } // load the index
     size_t size = getsize(gep.src->ty->data.pointer.base->data.array.base);
     riscv_printer.print("  li t2, " + to_string(size), fout);
     riscv_printer.print("  mul t1, t1, t2", fout);
-    riscv_printer.print("  add t0, t0, t1", fout);
+    riscv_printer.print("  add t0, t0, t1", fout); // calculate the address of the element
 }
 
 void visit_koopa(const koopa_raw_get_ptr_t& getptr, ofstream& fout) {
@@ -223,13 +220,13 @@ void visit_koopa(const koopa_raw_get_ptr_t& getptr, ofstream& fout) {
         riscv_printer.print("  add t0, sp, t0", fout);
     } else {
         riscv_printer.print_load("t0", st.getbias(getptr.src), fout);
-    }
+    } // load the address of the source variable
     if (getptr.index->kind.tag == KOOPA_RVT_INTEGER) {
         riscv_printer.print_load_const("t1", getptr.index->kind.data.integer.value, fout);
     } else {
         riscv_printer.print_load("t1", st.getbias(getptr.index), fout);
-    }
-    size_t size = getsize(getptr.src->ty->data.pointer.base);
+    } // load the index
+    size_t size = getsize(getptr.src->ty->data.pointer.base); // ???
     riscv_printer.print("  li t2, " + to_string(size), fout);
     riscv_printer.print("  mul t1, t1, t2", fout);
     riscv_printer.print("  add t0, t0, t1", fout);
@@ -241,14 +238,14 @@ void visit_global(const koopa_raw_value_t& value, ofstream& fout) {
     riscv_printer.print("  .data", fout);
     riscv_printer.print("  .globl " + name, fout);
     riscv_printer.print(name + ":", fout);
-    if (value->ty->data.pointer.base->tag == KOOPA_RTT_INT32) {
+    if (value->ty->data.pointer.base->tag == KOOPA_RTT_INT32) { // if the variable is an integer
         auto init = value->kind.data.global_alloc.init;
         if (init->kind.tag == KOOPA_RVT_ZERO_INIT) {
             riscv_printer.print("  .zero 4", fout);
         } else {
             riscv_printer.print("  .word " + to_string(init->kind.data.integer.value), fout);
         }
-    } else {
+    } else { // if the variable is an array
         auto init = value->kind.data.global_alloc.init;
         if (init->kind.tag == KOOPA_RVT_ZERO_INIT) {
             riscv_printer.print("  .zero " + to_string(getsize(value->ty->data.pointer.base)), fout);
@@ -269,7 +266,7 @@ void print_init(const koopa_raw_value_t& init, ofstream& fout) {
 }
 
 void visit_koopa(const koopa_raw_call_t& call, ofstream& fout) {
-    for (size_t i = 0; i < std::min(8, static_cast<int>(call.args.len)); ++i) {
+    for (size_t i = 0; i < std::min(8, static_cast<int>(call.args.len)); ++i) { // load the first 8 parameters
         koopa_raw_value_t arg = reinterpret_cast<koopa_raw_value_t>(call.args.buffer[i]);
         if (arg->kind.tag == KOOPA_RVT_INTEGER) {
             riscv_printer.print_load_const("a" + to_string(i), arg->kind.data.integer.value, fout);
@@ -277,7 +274,7 @@ void visit_koopa(const koopa_raw_call_t& call, ofstream& fout) {
             riscv_printer.print_load("a" + to_string(i), st.getbias(arg), fout);
         }
     }
-    for (size_t i = 8; i < call.args.len; ++i) {
+    for (size_t i = 8; i < call.args.len; ++i) { // load the rest of the parameters
         koopa_raw_value_t arg = reinterpret_cast<koopa_raw_value_t>(call.args.buffer[i]);
         if (arg->kind.tag == KOOPA_RVT_INTEGER) {
             riscv_printer.print_load_const("t0", arg->kind.data.integer.value, fout);
@@ -315,9 +312,9 @@ void visit_koopa(const koopa_raw_load_t& load, ofstream& fout) {
 }
 
 void visit_koopa(const koopa_raw_store_t& store, ofstream& fout) {
-    if (store.value->kind.tag == KOOPA_RVT_FUNC_ARG_REF) {
+    if (store.value->kind.tag == KOOPA_RVT_FUNC_ARG_REF) { // if the value is a function argument
         int idx = store.value->kind.data.func_arg_ref.index;
-        if (idx < 8) {
+        if (idx < 8) { // if the index is less than 8, then the parameter is stored in the register
             if (store.dest->kind.tag == KOOPA_RVT_GLOBAL_ALLOC) {
                 riscv_printer.print_sw_global("a" + to_string(idx), string(store.dest->name + 1), fout);
             } else if (store.dest->kind.tag == KOOPA_RVT_ALLOC) {
@@ -325,7 +322,7 @@ void visit_koopa(const koopa_raw_store_t& store, ofstream& fout) {
             } else {
                 riscv_printer.print_sw_ptr("a" + to_string(idx), st.getbias(store.dest), fout);
             }
-        } else {
+        } else { // if the index is greater than 8, then the parameter is stored in the stack
             riscv_printer.print_load("t0", 4 * (idx - 8) + st.getnum(), fout);
             if (store.dest->kind.tag == KOOPA_RVT_GLOBAL_ALLOC) {
                 riscv_printer.print_sw_global("t0", string(store.dest->name + 1), fout);
@@ -335,7 +332,7 @@ void visit_koopa(const koopa_raw_store_t& store, ofstream& fout) {
                 riscv_printer.print_sw_ptr("t0", st.getbias(store.dest), fout);
             }
         }
-    } else {
+    } else { // if the value is not a function argument
         if (store.value->kind.tag == KOOPA_RVT_INTEGER) {
             riscv_printer.print_load_const("t0", store.value->kind.data.integer.value, fout);
         } else {
@@ -352,7 +349,7 @@ void visit_koopa(const koopa_raw_store_t& store, ofstream& fout) {
 }
 
 void visit_koopa(const koopa_raw_return_t& ret, ofstream& fout) {
-    if (ret.value == nullptr) {
+    if (ret.value == nullptr) { // if the function has no return value
         if (flag_ra) {
             riscv_printer.print_ra("lw", st.getnum() - 4, fout);
         }

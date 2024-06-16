@@ -27,8 +27,9 @@ std::unordered_map<std::string, std::string> op2str = {
 };
 
 std::string bs_cnt::getlabel(std::string label) {
-    return label + "_" + std::to_string(cnt);
+    return label + "_" + std::to_string(cnt); // append the number to the label
 }
+
 
 std::string bs_cnt::getlabel(std::string label, int num) {
     return label + "_" + std::to_string(num);
@@ -73,8 +74,7 @@ void Printer::print_unary(int idx, std::string& op, std::unique_ptr<BaseAst>& rh
 void Printer::print_load(int idx, std::string& ident, std::stringstream& out, SymbolTable& table) {
     int id = table.getID(ident);
     int len = table.get(ident);
-    int flag = table.isConst(ident);
-    if (len >= 0 || flag) {
+    if (len >= 0) { // if ident is a pointer
         out << "  %" << idx << " = load @" << (ident + '_' + std::to_string(id)) << std::endl;
     } else {
         out << "  %" << idx << " = getelemptr @" << (ident + '_' + std::to_string(id))  << ", 0" << std::endl;
@@ -120,7 +120,7 @@ void Printer::print_eq(bool flag, int idx, std::unique_ptr<BaseAst>& ptr, std::s
     print_rhs(ptr, out);
 }
 
-void Printer::print_decl(std::stringstream& out) {
+void Printer::print_decl(std::stringstream& out) { // print library function
     out << "decl @getint(): i32" << std::endl;
     out << "decl @getch(): i32" << std::endl;
     out << "decl @getarray(*i32): i32" << std::endl;
@@ -134,13 +134,13 @@ void Printer::print_decl(std::stringstream& out) {
 void Printer::print_global_alloc(std::string& ident, int num, std::stringstream& out, GlobalSymbolTable& table) {
     out << "global @" << ident + '_' + std::to_string(0) << " = alloc i32, ";
     if (num == 0) {
-        out << "zeroinit" << std::endl;
+        out << "zeroinit" << std::endl; 
     } else {
         out << num << std::endl;
     }
 }
 
-void Printer::recursive_print(std::vector<int>& nums, int i, std::stringstream& out) {
+void Printer::recursive_print(std::vector<int>& nums, int i, std::stringstream& out) { // print array type
     if (i == nums.size()) {
         out << "i32";
         return;
@@ -161,7 +161,7 @@ void Printer::print_global_alloc_arr(std::string& ident, vector<int>& num, std::
     recursive_print(num, 0, out);
 }
 
-void Printer::recursive_print_agg_const(vector<int>& data, vector<int>& nums, int& i, int j , std::stringstream& out) {
+void Printer::recursive_print_agg_const(vector<int>& data, vector<int>& nums, int& i, int j , std::stringstream& out) { // print aggregation
     if (j == nums.size() - 1) {
         out << '{';
         for (int k = 0; k < nums[j]; k++) {
@@ -185,6 +185,17 @@ void Printer::recursive_print_agg_const(vector<int>& data, vector<int>& nums, in
 
 void Printer::print_aggregate_const(vector<int>& data, vector<int>& nums, std::stringstream& out) {
     out << ", ";
+    bool empty = true;
+    for (int num: data) {
+        if (num != 0) {
+            empty = false;
+            break;
+        }
+    }
+    if (empty) {
+        out << "zeroinit" << std::endl;
+        return;
+    }
     int i = 0, j = 0;
     recursive_print_agg_const(data, nums, i, j, out);
     out << std::endl;
@@ -192,6 +203,17 @@ void Printer::print_aggregate_const(vector<int>& data, vector<int>& nums, std::s
 
 void Printer::print_aggregate_var(std::vector<pair<int, bool>>& data, vector<int>& nums, std::stringstream& out) {
     out << ", ";
+    bool empty = true;
+    for (auto num: data) {
+        if (num.second || num.first != 0) {
+            empty = false;
+            break;
+        }
+    }
+    if (empty) {
+        out << "zeroinit" << std::endl;
+        return;
+    }
     int i = 0, j = 0;
     recursive_print_agg_var(data, nums, i, j, out);
     out << std::endl;
@@ -224,7 +246,7 @@ void Printer::recursive_print_agg_var(std::vector<pair<int, bool>>& data, vector
 }
 
 void Printer::recursive_print_init_arr_const(std::string& ident, vector<int>& data, vector<int>& nums, int& idx, std::stringstream& out, 
-                                       SymbolTable& table, int& i, int j) {
+                                       SymbolTable& table, int& i, int j) { // recursively 
     if (j == nums.size() - 1) {
         int oriidx = idx - 1;
         for (int k = 0; k < nums[j]; k++) {
@@ -301,7 +323,7 @@ void Printer::print_init_arr_var(std::string& ident, vector<pair<int, bool>>& da
 
 void Printer::print_store_array_const(string& ident, vector<pair<int, bool>>& nums, int idx, int num, std::stringstream& out, SymbolTable& table, bool flag) {
     int id = table.getID(ident);
-    if (flag) {
+    if (flag) { // if ident is a pointer
         out << "  %" << idx << " = load @" << (ident + '_' + std::to_string(id)) << std::endl;
         out << "  %" << idx + 1 << " = getptr %" << idx << ", ";
         idx += 1;
@@ -313,7 +335,7 @@ void Printer::print_store_array_const(string& ident, vector<pair<int, bool>>& nu
     } else {
         out << nums[0].first << std::endl;
     }
-    for (int i = 1; i < nums.size(); i++) {
+    for (int i = 1; i < nums.size(); i++) { // trace to the last dimension
         idx += 1;
         out << "  %" << idx << " = getelemptr %" << idx - 1 << ", ";
         if (nums[i].second) {
@@ -407,28 +429,46 @@ void RiscvPrinter::print(string in, ofstream& out) {
 }
 
 void RiscvPrinter::print_add(int num, ofstream& out) {
-    out << "  li t2, " << num << endl;
-    out << "  add sp, sp, t2" << endl;
+    if (num >= -2048 && num <= 2047) {
+        out << "  addi sp, sp, " << num << endl;
+    } else {
+        out << "  li t2, " << num << endl;
+        out << "  add sp, sp, t2" << endl;
+    }
 }
 
 void RiscvPrinter::print_sw(string dst, int num, ofstream& out) {
-    out << "  li t2, " << num << endl;
-    out << "  add t2, sp, t2" << endl;
-    out << "  sw " << dst << ", 0(t2)" << endl;
+    if (num >= -2048 && num <= 2047) {
+        out << "  sw " << dst << ", " << num << "(sp)" << endl;
+    } else {
+        out << "  li t2, " << num << endl;
+        out << "  add t2, sp, t2" << endl;
+        out << "  sw " << dst << ", 0(t2)" << endl;
+    }
 }
 
-void RiscvPrinter::print_sw_ptr(string dst, int num, ofstream& out) {
-    out << "  li t2, " << num << endl;
-    out << "  add t2, sp, t2" << endl;
-    out << "  lw t2, 0(t2)" << endl;
-    out << "  sw " << dst << ", 0(t2)" << endl;
+void RiscvPrinter::print_sw_ptr(string dst, int num, ofstream& out) { // store a value to the place pointed by a pointer
+    if (num >= -2048 && num <= 2047) {
+        out << "  lw t2, " << num << "(sp)" << endl;
+        out << "  sw " << dst << ", 0(t2)" << endl;
+    } else {
+        out << "  li t2, " << num << endl;
+        out << "  add t2, sp, t2" << endl;
+        out << "  lw t2, 0(t2)" << endl; // load the value of the pointer
+        out << "  sw " << dst << ", 0(t2)" << endl;
+    }
 }
 
-void RiscvPrinter::print_load_ptr(string dst, int num, ofstream& out) {
-    out << "  li t2, " << num << endl;
-    out << "  add t2, sp, t2" << endl;
-    out << "  lw " << "t2" << ", 0(t2)" << endl;
-    out << "  lw " << dst << ", 0(t2)" << endl;
+void RiscvPrinter::print_load_ptr(string dst, int num, ofstream& out) { // load a value from the place pointed by a pointer
+    if (num >= -2048 && num <= 2047) {
+        out << "  lw t2, " << num << "(sp)" << endl;
+        out << "  lw " << dst << ", 0(t2)" << endl;
+    } else {
+        out << "  li t2, " << num << endl;
+        out << "  add t2, sp, t2" << endl;
+        out << "  lw t2, 0(t2)" << endl;
+        out << "  lw " << dst << ", 0(t2)" << endl;
+    }
 }
 
 void RiscvPrinter::print_jump(string label, ofstream& out) {
@@ -440,9 +480,13 @@ void RiscvPrinter::print_load_const(string dst, int num, ofstream& out) {
 }
 
 void RiscvPrinter::print_load(string dst, int num, ofstream& out) {
-    out << "  li t2, " << num << endl;
-    out << "  add t2, sp, t2" << endl;
-    out << "  lw " << dst << ", 0(t2)" << endl;
+    if (num >= -2048 && num <= 2047) {
+        out << "  lw " << dst << ", " << num << "(sp)" << endl;
+    } else {
+        out << "  li t2, " << num << endl;
+        out << "  add t2, sp, t2" << endl;
+        out << "  lw " << dst << ", 0(t2)" << endl;
+    }
 }
 
 void RiscvPrinter::print_branch(string true_block, string false_block, string temp, ofstream& out) {
@@ -463,16 +507,24 @@ void RiscvPrinter::print_op(string op, ofstream& out) {
 
 void RiscvPrinter::print_ret(int num, ofstream& out) {
     if (num != 0) {
-        out << "  li t2, " << num << endl;
-        out << "  add sp, sp, t2" << endl;
+        if (num >= -2048 && num <= 2047) {
+            out << "  add sp, sp, " << num << endl;
+        } else {
+            out << "  li t2, " << num << endl;
+            out << "  add sp, sp, t2" << endl;
+        }
     }
     out << "  ret" << endl;
 }
 
 void RiscvPrinter::print_ra(string op, int num, ofstream& out) {
-    out << "  li t2, " << num << endl;
-    out << "  add t2, sp, t2" << endl;
-    out << "  " << op << " ra, 0(t2)" << endl;
+    if (num >= -2048 && num <= 2047) {
+        out << "  " << op << " ra, " << num << "(sp)" << endl;
+    } else {
+        out << "  li t2, " << num << endl;
+        out << "  add t2, sp, t2" << endl;
+        out << "  " << op << " ra, 0(t2)" << endl;
+    }
 }
 
 void RiscvPrinter::print_load_global(string dst, string ident, ofstream& out) {

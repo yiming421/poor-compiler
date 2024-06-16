@@ -23,7 +23,7 @@ bool SymbolTable::insert(std::string& name, bool is_ptr, int len) {
     if (tab.find(name) == tab.end()) {
         if (is_ptr) {
             tab[name] = std::make_pair(len, false);
-        } else {
+        } else { // we use negative number to represent the length of array
             tab[name] = std::make_pair(-len, false);
         }
         return true;
@@ -35,16 +35,16 @@ bool SymbolTable::isExist(std::string& name) const {
     auto& tab = table.first;
     if (tab.find(name) != tab.end()) {
         return true;
-    }
+    } // current table
     for (int i = len - 1; i >= 0; i--) {
         auto& t = st[i].first;
         if (t.find(name) != t.end()) {
             return true;
         }
-    }
+    } // previous tables
     if (gst.isExist_var(name)) {
         return true;
-    }
+    } // global table
     return false;
 }
 
@@ -111,8 +111,8 @@ void SymbolTable::push() {
 } // performance
 
 void SymbolTable::pop() {
-    table = std::move(st.back());
-    len--;
+    table = std::move(st.back()); // move the table to the top
+    len--; // only len decreases, not id 
     st.pop_back();
 } // performances
 
@@ -122,40 +122,31 @@ void SymbolTable::clear() {
     id += 1;
 }
 
-GlobalSymbolTable::GlobalSymbolTable() {
-    vector<string> params0({});
-    vector<string> params1({"i32"});
-    vector<string> params2({"*i32"});
-    vector<string> params3({"i32", "*i32"});
-    func_table["getint"] = make_pair(params0, true);
-    func_table["getch"] = make_pair(params0, true);
-    func_table["getarray"] = make_pair(params2, true);
-    func_table["putint"] = make_pair(params1, false);
-    func_table["putch"] = make_pair(params1, false);
-    func_table["putarray"] = make_pair(params3, false);
-    func_table["starttime"] = make_pair(params0, false);
-    func_table["stoptime"] = make_pair(params0, false);
+GlobalSymbolTable::GlobalSymbolTable() { // initialize the function table
+    func_table["getint"] = true;
+    func_table["getch"] = true;
+    func_table["getarray"] = true;
+    func_table["putint"] = false;
+    func_table["putch"] = false;
+    func_table["putarray"] = false;
+    func_table["starttime"] = false;
+    func_table["stoptime"] = false;
 }
 
-bool GlobalSymbolTable::insert_func(string& name, vector<string>& params, bool flag) {
+bool GlobalSymbolTable::insert_func(string& name, bool flag) {
     if (func_table.find(name) != func_table.end()) {
         return false;
     }
-    func_table[name] = make_pair(params, flag);
+    func_table[name] = flag;
     return true;
 }
 
 bool GlobalSymbolTable::ret_func(string& name) {
-    return func_table[name].second;
+    return func_table[name];
 }
 
 bool GlobalSymbolTable::isExist_func(string& name) const {
     return func_table.find(name) != func_table.end();
-}
-
-vector<string>& GlobalSymbolTable::getParams(string& name) {
-    assert(func_table.find(name) != func_table.end());
-    return func_table[name].first;
 }
 
 bool GlobalSymbolTable::insert_var(string& name, int num, bool is_const) {

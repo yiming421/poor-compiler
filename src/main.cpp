@@ -17,7 +17,7 @@ extern int yyparse(unique_ptr<BaseAst>& ast);
 
 void call_koopa(const char* res, ofstream& fout);
 
-void call_koopa(const char* res, ofstream& fout) {
+void call_koopa(const char* res, ofstream& fout) { // generate riscv code
     koopa_program_t program;
     koopa_error_code_t ret = koopa_parse_from_string(res, &program);
     assert(ret == KOOPA_EC_SUCCESS);

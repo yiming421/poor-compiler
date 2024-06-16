@@ -54,7 +54,7 @@ class FuncFparamsAst : public BaseAst {
 public:
     std::unique_ptr<BaseAst> func_fparams;
     std::unique_ptr<BaseAst> func_fparam;
-    void dump(std::stringstream& out, vector<pair<string, string>>& params);
+    void dump(std::stringstream& out, vector<pair<string, string>>& params); 
     void dump(std::stringstream& out) {}
 };
 
@@ -302,10 +302,9 @@ class ConstInitValAst : public BaseAst {
 public:
     std::unique_ptr<BaseAst> const_exp;
     std::unique_ptr<BaseAst> const_init_val_list;
-    //bool flag_initial = false;
     int cal();
-    void dump(std::stringstream& out, string ident, vector<int>& nums, bool flag);
-    void cal(vector<int>& nums, int idx, int& cnt, vector<int>& data);
+    void dump(std::stringstream& out, string& ident, vector<int>& nums, bool flag); // print init value
+    void cal(vector<int>& nums, int idx, int& cnt, vector<int>& data); // helper function
     void dump(std::stringstream& out) {}
 };
 
@@ -314,8 +313,8 @@ public:
     std::unique_ptr<BaseAst> exp;
     std::unique_ptr<BaseAst> init_val_list;
     void dump(std::stringstream& out);
-    void dump(std::stringstream& out, string ident, vector<int>& num, bool flag);
-    void dump(vector<int>& nums, vector<pair<int, bool>>& data, int idx, int& cnt, std::stringstream& out);
+    void dump(std::stringstream& out, string& ident, vector<int>& num, bool flag);
+    void dump(vector<int>& nums, vector<pair<int, bool>>& data, int idx, int& cnt, std::stringstream& out); // helper function
     int cal();
 };
 
@@ -346,13 +345,13 @@ public:
     std::unique_ptr<BaseAst> init_val;
     std::unique_ptr<BaseAst> init_val_list;
     void dump(std::stringstream& out) {}
-    void dump(vector<int>& nums, vector<pair<int, bool>>& data, int idx, int& cnt, std::stringstream& out, bool flag);
+    void dump(vector<int>& nums, vector<pair<int, bool>>& data, int idx, int& cnt, std::stringstream& out, bool flag); // helper function
 };
 
 class ConstInitValListAst : public BaseAst {
 public:
     std::unique_ptr<BaseAst> const_init_val;
     std::unique_ptr<BaseAst> const_init_val_list;
-    void cal(vector<int>& nums, int idx, int& cnt, vector<int>& data, bool flag);
+    void cal(vector<int>& nums, int idx, int& cnt, vector<int>& data, bool flag); // helper function
     int cal() {return 0;}
 };
