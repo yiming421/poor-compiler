@@ -51,10 +51,6 @@ void FuncDefAst::dump(std::stringstream& out) {
     if (func_fparams != nullptr) {
         reinterpret_cast<FuncFparamsAst&>(*func_fparams).dump(out, params);
     }
-    vector<string> pars;
-    for (auto& param : params) {
-        pars.push_back(param.first);
-    }
     bool flag = false;
     if (func_type->ident == "i32") {
         flag = true;
