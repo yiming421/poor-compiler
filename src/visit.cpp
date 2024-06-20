@@ -250,17 +250,30 @@ void visit_global(const koopa_raw_value_t& value, ofstream& fout) {
         if (init->kind.tag == KOOPA_RVT_ZERO_INIT) {
             riscv_printer.print("  .zero " + to_string(getsize(value->ty->data.pointer.base)), fout);
         } else {
-            print_init(init, fout);
+            int cnt = 0;
+            print_init(init, fout, cnt);
+            if (cnt != 0) {
+                riscv_printer.print("  .zero " + to_string(cnt * 4), fout);
+            }
         }
     }
 }
 
-void print_init(const koopa_raw_value_t& init, ofstream& fout) {
+void print_init(const koopa_raw_value_t& init, ofstream& fout, int& cnt) {
     if (init->kind.tag == KOOPA_RVT_INTEGER) {
-        riscv_printer.print("  .word " + to_string(init->kind.data.integer.value), fout);
+        int num = init->kind.data.integer.value;
+        if (num != 0) {
+            if (cnt != 0) {
+                riscv_printer.print("  .zero " + to_string(cnt * 4), fout);
+            }
+            riscv_printer.print("  .word " + to_string(init->kind.data.integer.value), fout);
+            cnt = 0;
+        } else {
+            cnt++;
+        }
     } else {
         for (size_t i = 0; i < init->kind.data.aggregate.elems.len; ++i) {
-            print_init(reinterpret_cast<koopa_raw_value_t>(init->kind.data.aggregate.elems.buffer[i]), fout);
+            print_init(reinterpret_cast<koopa_raw_value_t>(init->kind.data.aggregate.elems.buffer[i]), fout, cnt);
         }
     }
 }

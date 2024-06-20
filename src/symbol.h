@@ -12,7 +12,7 @@ public:
     GlobalSymbolTable();
     bool insert_func(string& name, bool flag);
     bool isExist_func(string& name) const;
-    bool insert_var(string& name, int num, bool is_const);
+    bool insert_var(string& name, int num,bool is_const);
     bool isExist_var(string& name) const;
     bool ret_func(string& name);
     unordered_map<string, bool> func_table; // bool: true for return, false for void

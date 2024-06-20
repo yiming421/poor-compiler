@@ -45,11 +45,12 @@ int main(int argc, char** argv) {
 
     stringstream out;
     ast->dump(out);
-    string tmp = out.str();
     if (strcmp("-koopa", mode) == 0) {
         ofstream fout(output);
-        fout << tmp << endl;
+        fout << out.str() << endl;
     } else {
+        std::stringbuf* buf = out.rdbuf();
+        const string& tmp = buf->str();
         const char* res = tmp.c_str();
         ofstream fout(output);
         call_koopa(res, fout);

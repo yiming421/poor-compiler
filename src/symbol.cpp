@@ -108,13 +108,13 @@ void SymbolTable::push() {
     table.first.clear();
     table.second = id;
     id++;
-} // performance
+}
 
 void SymbolTable::pop() {
     table = std::move(st.back()); // move the table to the top
     len--; // only len decreases, not id 
     st.pop_back();
-} // performances
+}
 
 void SymbolTable::clear() {
     table.first.clear();
